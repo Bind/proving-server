@@ -3,8 +3,9 @@
 - [ ] Dynamically store proving information
 - [ ] Dynamically fetch wasm, zkey, etc
 - [ ] Dynamically configure CircomProver to be invoked via endpoint
-
+```
 tentative endpoints:
+
   Post /prover
     Create a new Prover
     Req {
@@ -24,13 +25,14 @@ tentative endpoints:
       2: instantiating prover
       3: ready
       }
+      
   Post /prover/${name}/${version}
       Generate new proof 
       {
       // Object with each item in builder_params as a key
   
       }
-
+```
 Refs:
 
 - https://github.com/projectsophon/darkforest-rs/blob/main/mimc-fast/src/main.rs
