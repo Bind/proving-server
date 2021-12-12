@@ -1,13 +1,18 @@
-use serde::{Deserialize, Serialize};
+use rocket::fairing::{Fairing, Info, Kind};
+
+use rocket::serde::{json::Json, Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(crate = "rocket::serde")]
 pub struct ProverConfig {
-    path_to_wasm: String,
-    path_to_zkey: String,
-    builder_params: Vec<String>,
+    pub name: String,
+    pub version: String,
+    pub path_to_wasm: String,
+    pub path_to_zkey: String,
+    pub builder_params: Vec<String>,
 }
 
 pub type Db = Arc<Mutex<HashMap<String, ProverConfig>>>;
