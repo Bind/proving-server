@@ -1,7 +1,7 @@
 # Proving Server v1
 
-- [ ] Dynamically store proving information
-- [ ] Dynamically fetch wasm, zkey, etc
+- [x] Dynamically store proving information
+- [x] Dynamically fetch wasm, zkey, etc
 - [ ] Dynamically configure CircomProver to be invoked via endpoint
 ```
 tentative endpoints:
