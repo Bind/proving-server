@@ -7,7 +7,7 @@
 - [ ] ensure parallel proof generation is happy
 - [ ] move resource fetching into worker queue
 - [ ] throw error on duplicate create provers
-- [ ] 
+
 ```
 tentative endpoints:
 
