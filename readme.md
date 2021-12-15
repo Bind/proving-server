@@ -2,7 +2,12 @@
 
 - [x] Dynamically store proving information
 - [x] Dynamically fetch wasm, zkey, etc
-- [ ] Dynamically configure CircomProver to be invoked via endpoint
+- [ ] Store initialized prover across Rocket threads
+- [ ] invoke prover based on request parameters from endpoint
+- [ ] ensure parallel proof generation is happy
+- [ ] move resource fetching into worker queue
+- [ ] throw error on duplicate create provers
+- [ ] 
 ```
 tentative endpoints:
 
