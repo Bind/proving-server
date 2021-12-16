@@ -1,4 +1,5 @@
 use rocket::http::Status;
+mod prover;
 mod storage;
 mod utils;
 use rocket::serde::json::Json;

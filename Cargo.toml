@@ -6,6 +6,10 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ark-bn254 = {version = "0.3.0"}
+ark-circom = {git = "https://github.com/gakonst/ark-circom"}
+ark-groth16 = {git = "https://github.com/arkworks-rs/groth16", rev = "765817f", features = ["parallel"]}
+ark-std = {version = "0.3.0", features = ["parallel"]}
 dotenv = "0.15.0"
 reqwest = "0.11.7"
 rocket = {version = "0.5.0-rc.1", features = ["json"]}
