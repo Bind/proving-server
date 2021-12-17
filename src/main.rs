@@ -46,9 +46,9 @@ pub async fn fetch_file(path: PathBuf, url: String) -> Status {
         Err(_) => return Status::BadRequest,
     };
     let mut dest = File::create(path).unwrap();
-    let content = resp.text().await.unwrap();
+    let content = resp.bytes().await.unwrap();
 
-    copy(&mut content.as_bytes(), &mut dest).unwrap();
+    copy(&mut content.as_ref(), &mut dest).unwrap();
     return Status::Accepted;
 }
 
