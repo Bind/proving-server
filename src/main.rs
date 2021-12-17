@@ -28,6 +28,11 @@ pub fn get_wasm_path(prover: ProverConfig, config: EnvConfig) -> PathBuf {
     path.set_extension("wasm");
     return path;
 }
+pub fn get_r1cs_path(prover: ProverConfig, config: EnvConfig) -> PathBuf {
+    let mut path = get_path_from_prover(prover, config).unwrap();
+    path.set_extension("r1cs");
+    return path;
+}
 
 pub fn get_path_from_prover(
     prover: ProverConfig,
@@ -64,10 +69,18 @@ pub async fn add_prover_handler(
 
     let wasm_path = get_wasm_path(prover.clone(), config.clone());
     let zkey_path = get_zkey_path(prover.clone(), config.clone());
+    let r1cs_path = get_r1cs_path(prover.clone(), config.clone());
     db.insert(prover.name.clone(), prover.clone());
 
-    fetch_file(wasm_path, prover.path_to_wasm.clone()).await;
-    fetch_file(zkey_path, prover.path_to_zkey.clone()).await;
+    println!(
+        "wasm:{:?} \nzkey:{:?} \nr1cs:{:?}",
+        wasm_path.clone(),
+        zkey_path.clone(),
+        r1cs_path.clone()
+    );
+    fetch_file(wasm_path.clone(), prover.path_to_wasm.clone()).await;
+    fetch_file(zkey_path.clone(), prover.path_to_zkey.clone()).await;
+    fetch_file(r1cs_path.clone(), prover.path_to_r1cs.clone()).await;
     return Status::Accepted;
 }
 #[get("/prover")]

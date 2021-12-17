@@ -11,6 +11,7 @@ pub struct ProverConfig {
     pub version: String,
     pub path_to_wasm: String,
     pub path_to_zkey: String,
+    pub path_to_r1cs: String,
     pub builder_params: Vec<String>,
 }
 
