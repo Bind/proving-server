@@ -60,6 +60,7 @@ pub async fn fetch_file(path: PathBuf, url: String) -> Status {
 #[post("/prover", format = "json", data = "<prover>")]
 pub async fn add_prover_handler(
     db: &rocket::State<storage::Db>,
+    prover_storage: &rocket::State<storage::Provers>,
     config: &rocket::State<storage::Config>,
     prover: Json<storage::ProverConfig>,
 ) -> Status {
@@ -81,8 +82,13 @@ pub async fn add_prover_handler(
     fetch_file(wasm_path.clone(), prover.path_to_wasm.clone()).await;
     fetch_file(zkey_path.clone(), prover.path_to_zkey.clone()).await;
     fetch_file(r1cs_path.clone(), prover.path_to_r1cs.clone()).await;
+    let p = prover::CircuitProver::new_path(zkey_path, wasm_path, r1cs_path).unwrap();
+
+    let mut prover_storage = prover_storage.lock().await;
+    prover_storage.insert(prover.name.clone(), p);
     return Status::Accepted;
 }
+
 #[get("/prover")]
 pub async fn list_provers_handler(
     db: &rocket::State<storage::Db>,
@@ -100,6 +106,7 @@ fn rocket() -> _ {
     rocket::build()
         .manage(storage::init_storage())
         .manage(storage::init_config())
+        .manage(storage::init_provers())
         .mount("/", routes![index])
         .mount("/v1/", routes![add_prover_handler, list_provers_handler])
 }

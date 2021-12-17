@@ -1,3 +1,4 @@
+use crate::prover::CircuitProver;
 use rocket::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;
@@ -21,9 +22,13 @@ pub struct EnvConfig {
 }
 
 pub type Db = Arc<Mutex<HashMap<String, ProverConfig>>>;
+pub type Provers = Arc<Mutex<HashMap<String, CircuitProver>>>;
 
 pub type Config = Arc<Mutex<EnvConfig>>;
 pub fn init_storage() -> Db {
+    return Arc::new(Mutex::new(HashMap::new()));
+}
+pub fn init_provers() -> Provers {
     return Arc::new(Mutex::new(HashMap::new()));
 }
 pub fn init_config() -> Config {
