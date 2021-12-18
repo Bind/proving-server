@@ -2082,6 +2082,7 @@ dependencies = [
  "ark-groth16",
  "ark-std",
  "dotenv",
+ "num-bigint",
  "reqwest",
  "rocket",
  "serde",

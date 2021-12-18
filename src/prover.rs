@@ -3,8 +3,11 @@ use ark_bn254::Bn254;
 use ark_circom::{CircomBuilder, CircomCircuit, CircomConfig, CircomReduction};
 use ark_groth16::{create_random_proof_with_reduction, Proof, ProvingKey};
 use ark_std::rand::thread_rng;
+use num_bigint::ToBigInt;
 use rocket::serde::{Deserialize, Serialize};
-use std::{fs::File, path::PathBuf};
+use std::{collections::HashMap, fs::File, path::PathBuf};
+
+use crate::storage::ProverConfig;
 
 pub type ProofWithInputs = (Proof<Bn254>, Vec<ark_bn254::Fr>);
 
@@ -27,6 +30,22 @@ impl CircuitProver {
     pub fn new(builder: CircomBuilder<Bn254>, params: ProvingKey<Bn254>) -> Self {
         Self { builder, params }
     }
+}
+
+pub fn build_inputs(
+    circuit: &CircuitProver,
+    cfg: ProverConfig,
+    params: HashMap<String, u64>,
+) -> CircomCircuit<Bn254> {
+    let mut builder = circuit.builder.clone();
+
+    for param in cfg.builder_params {
+        builder.push_input(
+            param.clone(),
+            ToBigInt::to_bigint(params.get(&param).unwrap()).unwrap(),
+        )
+    }
+    builder.build().unwrap()
 }
 
 pub fn prove(

@@ -3,6 +3,7 @@ mod prover;
 mod storage;
 mod utils;
 use rocket::serde::json::Json;
+use std::collections::HashMap;
 use std::io::copy;
 use std::{fs::File, path::PathBuf};
 use storage::{EnvConfig, ProverConfig};
@@ -97,6 +98,22 @@ pub async fn list_provers_handler(
     let provers: Vec<storage::ProverConfig> = prover_hm.values().cloned().collect();
     println!("database {:?}", provers);
     return Some(Json(provers));
+}
+
+#[post("/prove/<prover_name>", data = "<inputs>")]
+pub async fn execute_prover(
+    prover_storage: &rocket::State<storage::Provers>,
+    prover_cfg: &rocket::State<storage::Db>,
+    prover_name: &str,
+    inputs: Json<HashMap<String, u64>>,
+) {
+    let mut prover_storage = prover_storage.lock().await;
+    let p = prover_storage.get(prover_name).unwrap();
+    let mut prover_cfg = prover_cfg.lock().await;
+    let cfg = prover_cfg.get(prover_name).unwrap();
+
+    let circuit = prover::build_inputs(p.clone(), cfg.clone(), inputs.into_inner());
+    prover::prove(circuit, &p.params);
 }
 
 #[launch]
