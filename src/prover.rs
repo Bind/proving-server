@@ -51,7 +51,6 @@ pub fn prove(
     circuit: CircomCircuit<Bn254>,
     params: &ProvingKey<Bn254>,
 ) -> Result<ProofWithInputs, ()> {
-    // TODO: Make this a Result
     let public_inputs = circuit.get_public_inputs().unwrap();
     let proof = create_random_proof_with_reduction::<_, _, _, CircomReduction>(
         circuit,
@@ -66,23 +65,21 @@ pub fn prove(
 mod tests {
     use super::CircuitProver;
     use ark_bn254::Bn254;
-    use ark_circom::{CircomBuilder, CircomCircuit, CircomConfig, CircomReduction};
+    use ark_circom::CircomConfig;
     use ark_groth16::{
         create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
-        Proof, ProvingKey,
     };
     use ark_std::rand::thread_rng;
-    use num_bigint::ToBigInt;
-    use std::collections::HashMap;
     #[test]
-    fn exploration() {
+    fn test_circom_config_init() {
         CircomConfig::<Bn254>::new(
             "./zkey_files/6.6.6/move.wasm",
             "./zkey_files/6.6.6/move.r1cs",
-        );
+        )
+        .unwrap();
     }
     #[test]
-    fn build_circuit() {
+    fn test_build_circuit() {
         fn max_distance(x1: i64, y1: i64, x2: i64, y2: i64) -> u64 {
             ((x1 - x2).pow(2) as f64 + (y1 - y2).pow(2) as f64).sqrt() as u64 + 1
         }

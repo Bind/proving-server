@@ -2,6 +2,7 @@ use rocket::http::Status;
 mod prover;
 mod storage;
 mod utils;
+use ark_groth16::{prepare_verifying_key, verify_proof};
 use rocket::serde::json::Json;
 use std::collections::HashMap;
 use std::io::copy;
@@ -106,14 +107,25 @@ pub async fn execute_prover(
     prover_cfg: &rocket::State<storage::Db>,
     prover_name: &str,
     inputs: Json<HashMap<String, u64>>,
-) {
-    let mut prover_storage = prover_storage.lock().await;
+) -> Status {
+    println!("fetching prover");
+    let prover_storage = prover_storage.lock().await;
     let p = prover_storage.get(prover_name).unwrap();
-    let mut prover_cfg = prover_cfg.lock().await;
+    println!("fetching prover config");
+    let prover_cfg = prover_cfg.lock().await;
     let cfg = prover_cfg.get(prover_name).unwrap();
-
+    println!("generating circuit");
     let circuit = prover::build_inputs(p.clone(), cfg.clone(), inputs.into_inner());
-    prover::prove(circuit, &p.params);
+    let (proof, inputs) = prover::prove(circuit, &p.params).unwrap();
+    // Check that the proof is valid
+
+    let pvk = prepare_verifying_key(&p.params.vk);
+    let verified = verify_proof(&pvk, &proof, &inputs).unwrap();
+    if verified {
+        return Status::Ok;
+    } else {
+        return Status::BadRequest;
+    }
 }
 
 #[launch]
@@ -140,9 +152,10 @@ mod test {
     use std::collections::HashMap;
 
     #[test]
-    fn add_prover() {
+    fn test_add_prover_route() {
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).expect("valid rocket instance");
+
         let prover = ProverConfig {
             name: String::from("test"),
             version: String::from("0.0.1"),
@@ -163,6 +176,110 @@ mod test {
                 String::from("yMirror"),
             ],
         };
+        let response = client.post("/v1/prover").json(&prover).dispatch();
+        println!("{:?}", response.body());
+        assert_eq!(response.status(), Status::Ok);
+    }
+    #[test]
+    fn test_proof_generation() {
+        let rocket_instance = rocket();
+        let client = Client::tracked(rocket_instance).expect("valid rocket instance");
+        fn max_distance(x1: i64, y1: i64, x2: i64, y2: i64) -> u64 {
+            ((x1 - x2).pow(2) as f64 + (y1 - y2).pow(2) as f64).sqrt() as u64 + 1
+        }
+        let prover = ProverConfig {
+            name: String::from("test"),
+            version: String::from("0.0.1"),
+            path_to_r1cs: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.r1cs"),
+            path_to_wasm: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.wasm"),
+            path_to_zkey: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.zkey"),
+            builder_params: vec![
+                String::from("x1"),
+                String::from("y1"),
+                String::from("x2"),
+                String::from("y2"),
+                String::from("r"),
+                String::from("distMax"),
+                String::from("PLANETHASH_KEY"),
+                String::from("SPACETYPE_KEY"),
+                String::from("SCALE"),
+                String::from("xMirror"),
+                String::from("yMirror"),
+            ],
+        };
+        let response = client.post("/v1/prover").json(&prover).dispatch();
+        println!("{:?}", response.body());
+        assert_eq!(response.status(), Status::Ok);
 
+        let mut proof_request: HashMap<String, u64> = HashMap::new();
+        proof_request.insert(String::from("x1"), 100);
+        proof_request.insert(String::from("y1"), 100);
+        proof_request.insert(String::from("x2"), 120);
+        proof_request.insert(String::from("y2"), 120);
+        proof_request.insert(String::from("r"), 8000);
+        proof_request.insert(String::from("distMax"), max_distance(100, 100, 120, 120));
+        proof_request.insert(String::from("PLANETHASH_KEY"), 1729);
+        proof_request.insert(String::from("SPACETYPE_KEY"), 1730);
+        proof_request.insert(String::from("xMirror"), false as u64);
+        proof_request.insert(String::from("SCALE"), 16384);
+        proof_request.insert(String::from("yMirror"), false as u64);
+        let response = client
+            .post("/v1/prove/test")
+            .json(&proof_request)
+            .dispatch();
+        assert_eq!(response.status(), Status::Ok);
+
+        let response = client.post("/v1/prover").json(&prover).dispatch();
+        println!("{:?}", response.body());
+        assert_eq!(response.status(), Status::Ok);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_bad_proof_generation() {
+        let rocket_instance = rocket();
+        let client = Client::tracked(rocket_instance).expect("valid rocket instance");
+
+        let prover = ProverConfig {
+            name: String::from("test"),
+            version: String::from("0.0.1"),
+            path_to_r1cs: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.r1cs"),
+            path_to_wasm: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.wasm"),
+            path_to_zkey: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.zkey"),
+            builder_params: vec![
+                String::from("x1"),
+                String::from("y1"),
+                String::from("x2"),
+                String::from("y2"),
+                String::from("r"),
+                String::from("distMax"),
+                String::from("PLANETHASH_KEY"),
+                String::from("SPACETYPE_KEY"),
+                String::from("SCALE"),
+                String::from("xMirror"),
+                String::from("yMirror"),
+            ],
+        };
+        let response = client.post("/v1/prover").json(&prover).dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        let mut proof_request: HashMap<String, u64> = HashMap::new();
+
+        proof_request.insert(String::from("x1"), 100);
+        proof_request.insert(String::from("y1"), 100);
+        proof_request.insert(String::from("x2"), 120);
+        proof_request.insert(String::from("y2"), 120);
+        proof_request.insert(String::from("r"), 8000);
+        proof_request.insert(String::from("distMax"), 0);
+        proof_request.insert(String::from("PLANETHASH_KEY"), 1729);
+        proof_request.insert(String::from("SPACETYPE_KEY"), 1730);
+        proof_request.insert(String::from("xMirror"), false as u64);
+        proof_request.insert(String::from("SCALE"), 16384);
+        proof_request.insert(String::from("yMirror"), false as u64);
+
+        let response = client
+            .post("/v1/prove/test")
+            .json(&proof_request)
+            .dispatch();
+        assert_eq!(response.status(), Status::BadRequest);
     }
 }
