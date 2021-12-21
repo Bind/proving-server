@@ -2,8 +2,9 @@
 
 - [x] Dynamically store proving information
 - [x] Dynamically fetch wasm, zkey, etc
-- [ ] Store initialized prover across Rocket threads
-- [ ] invoke prover based on request parameters from endpoint
+- [x] Store initialized prover across Rocket threads
+- [x] invoke prover based on request parameters from endpoint
+- [ ] Return serialized proof from endpoint
 - [ ] ensure parallel proof generation is happy
 - [ ] move resource fetching into worker queue
 - [ ] throw error on duplicate create provers
@@ -20,24 +21,25 @@ tentative endpoints:
       name: String, user defined name,
       version: String, user defined version
     }
-  
+
   Get /prover/${name}/${version}
     Get current creation status
-  
+
      Resp {
       0: not started
       1: loading external resources
       2: instantiating prover
       3: ready
       }
-      
+
   Post /prover/${name}/${version}
-      Generate new proof 
+      Generate new proof
       {
       // Object with each item in builder_params as a key
-  
+
       }
 ```
+
 Refs:
 
 - https://github.com/projectsophon/darkforest-rs/blob/main/mimc-fast/src/main.rs
