@@ -87,7 +87,7 @@ pub async fn add_prover_handler(
 
     let mut prover_storage = prover_storage.lock().await;
     prover_storage.insert(prover.name.clone(), p);
-    return Status::Accepted;
+    return Status::Ok;
 }
 
 #[get("/prover")]
@@ -125,5 +125,44 @@ fn rocket() -> _ {
         .manage(storage::init_config())
         .manage(storage::init_provers())
         .mount("/", routes![index])
-        .mount("/v1/", routes![add_prover_handler, list_provers_handler])
+        .mount(
+            "/v1/",
+            routes![add_prover_handler, list_provers_handler, execute_prover],
+        )
+}
+
+#[cfg(test)]
+mod test {
+    use super::rocket;
+    use super::storage::ProverConfig;
+    use rocket::http::Status;
+    use rocket::local::blocking::Client;
+    use std::collections::HashMap;
+
+    #[test]
+    fn add_prover() {
+        let rocket_instance = rocket();
+        let client = Client::tracked(rocket_instance).expect("valid rocket instance");
+        let prover = ProverConfig {
+            name: String::from("test"),
+            version: String::from("0.0.1"),
+            path_to_r1cs: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.r1cs"),
+            path_to_wasm: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.wasm"),
+            path_to_zkey: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.zkey"),
+            builder_params: vec![
+                String::from("x1"),
+                String::from("y1"),
+                String::from("x2"),
+                String::from("y2"),
+                String::from("r"),
+                String::from("distMax"),
+                String::from("PLANETHASH_KEY"),
+                String::from("SPACETYPE_KEY"),
+                String::from("SCALE"),
+                String::from("xMirror"),
+                String::from("yMirror"),
+            ],
+        };
+
+    }
 }
