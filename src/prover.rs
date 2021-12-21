@@ -4,7 +4,6 @@ use ark_circom::{CircomBuilder, CircomCircuit, CircomConfig, CircomReduction};
 use ark_groth16::{create_random_proof_with_reduction, Proof, ProvingKey};
 use ark_std::rand::thread_rng;
 use num_bigint::ToBigInt;
-use rocket::serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, path::PathBuf};
 
 use crate::storage::ProverConfig;
@@ -65,13 +64,56 @@ pub fn prove(
 
 #[cfg(test)]
 mod tests {
+    use super::CircuitProver;
     use ark_bn254::Bn254;
     use ark_circom::{CircomBuilder, CircomCircuit, CircomConfig, CircomReduction};
+    use ark_groth16::{
+        create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
+        Proof, ProvingKey,
+    };
+    use ark_std::rand::thread_rng;
+    use num_bigint::ToBigInt;
+    use std::collections::HashMap;
     #[test]
     fn exploration() {
         CircomConfig::<Bn254>::new(
             "./zkey_files/6.6.6/move.wasm",
             "./zkey_files/6.6.6/move.r1cs",
         );
+    }
+    #[test]
+    fn build_circuit() {
+        fn max_distance(x1: i64, y1: i64, x2: i64, y2: i64) -> u64 {
+            ((x1 - x2).pow(2) as f64 + (y1 - y2).pow(2) as f64).sqrt() as u64 + 1
+        }
+        let circuit = CircuitProver::new_path(
+            String::from("./zkey_files/6.6.6/move.zkey"),
+            String::from("./zkey_files/6.6.6/move.wasm"),
+            String::from("./zkey_files/6.6.6/move.r1cs"),
+        )
+        .unwrap();
+
+        let mut builder = circuit.builder;
+
+        builder.push_input(String::from("y1"), 100);
+        builder.push_input(String::from("x1"), 100);
+        builder.push_input(String::from("x2"), 120);
+        builder.push_input(String::from("y2"), 120);
+        builder.push_input(String::from("r"), 8000);
+        builder.push_input(String::from("distMax"), max_distance(100, 100, 120, 120));
+        builder.push_input(String::from("PLANETHASH_KEY"), 1729);
+        builder.push_input(String::from("SPACETYPE_KEY"), 1730);
+        builder.push_input(String::from("SCALE"), 16384);
+        builder.push_input(String::from("xMirror"), false as u64);
+        builder.push_input(String::from("yMirror"), false as u64);
+        let circom = builder.setup();
+        let mut rng = thread_rng();
+        let params = generate_random_parameters::<Bn254, _, _>(circom, &mut rng).unwrap();
+        let circom = builder.build().unwrap();
+        let inputs = circom.get_public_inputs().unwrap();
+        let proof = create_random_proof(circom, &params, &mut rng).unwrap();
+        let pvk = prepare_verifying_key(&params.vk);
+        let verified = verify_proof(&pvk, &proof, &inputs).unwrap();
+        assert!(verified);
     }
 }
