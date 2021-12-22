@@ -1,11 +1,12 @@
 use rocket::http::Status;
+mod errors;
 mod prover;
 mod storage;
 mod types;
 mod utils;
-use ark_groth16::{prepare_verifying_key, verify_proof};
+use crate::errors::ProvingServerError;
+use ark_circom::ethereum::Proof;
 use rocket::serde::json::Json;
-use std::collections::HashMap;
 use std::io::copy;
 use std::{fs::File, path::PathBuf};
 use storage::{EnvConfig, ProverConfig};
@@ -109,7 +110,7 @@ pub async fn execute_prover(
     prover_cfg: &rocket::State<storage::Db>,
     prover_name: &str,
     inputs: Json<ProofInputs>,
-) -> Option<Json<Abc>> {
+) -> Result<Json<Abc>, ProvingServerError> {
     println!("fetching prover");
     let prover_storage = prover_storage.lock().await;
     let p = prover_storage.get(prover_name).unwrap();
@@ -118,12 +119,17 @@ pub async fn execute_prover(
     let cfg = prover_cfg.get(prover_name).unwrap();
 
     let proof_inputs = inputs.into_inner();
+    match cfg.validate_inputs(&proof_inputs) {
+        Err(error) => return Err(error),
+        _ => (),
+    }
+
     println!("generating circuit");
     let circuit = prover::build_inputs(p.clone(), cfg.clone(), proof_inputs);
     let (proof, _) = prover::prove(circuit, &p.params).unwrap();
     // Check that the proof is valid
 
-    return Some(Json(to_eth_type(Proof::from(proof))));
+    return Ok(Json(to_eth_type(Proof::from(proof))));
 }
 
 #[launch]
@@ -184,9 +190,6 @@ mod test {
     fn test_proof_generation() {
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).expect("valid rocket instance");
-        fn max_distance(x1: i64, y1: i64, x2: i64, y2: i64) -> u64 {
-            ((x1 - x2).pow(2) as f64 + (y1 - y2).pow(2) as f64).sqrt() as u64 + 1
-        }
         let prover = ProverConfig {
             name: String::from("test"),
             version: String::from("0.0.1"),

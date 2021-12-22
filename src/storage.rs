@@ -1,4 +1,6 @@
+use crate::errors::ProvingServerError;
 use crate::prover::CircuitProver;
+use crate::types::ProofInputs;
 use rocket::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;
@@ -14,6 +16,19 @@ pub struct ProverConfig {
     pub path_to_zkey: String,
     pub path_to_r1cs: String,
     pub builder_params: Vec<String>,
+}
+
+impl ProverConfig {
+    pub fn validate_inputs(&self, inputs: &ProofInputs) -> Result<bool, ProvingServerError> {
+        for param in &self.builder_params {
+            if !inputs.contains_key(&param.clone()) {
+                return Err(ProvingServerError::BadProofInputsError {
+                    message: String::from(format!("{}", param.clone())),
+                });
+            }
+        }
+        return Ok(true);
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
