@@ -1,6 +1,7 @@
 use rocket::http::Status;
 mod prover;
 mod storage;
+mod types;
 mod utils;
 use ark_groth16::{prepare_verifying_key, verify_proof};
 use rocket::serde::json::Json;
@@ -8,6 +9,7 @@ use std::collections::HashMap;
 use std::io::copy;
 use std::{fs::File, path::PathBuf};
 use storage::{EnvConfig, ProverConfig};
+use types::{to_eth_type, Abc, ProofInputs};
 extern crate dotenv;
 
 use dotenv::dotenv;
@@ -106,26 +108,22 @@ pub async fn execute_prover(
     prover_storage: &rocket::State<storage::Provers>,
     prover_cfg: &rocket::State<storage::Db>,
     prover_name: &str,
-    inputs: Json<HashMap<String, u64>>,
-) -> Status {
+    inputs: Json<ProofInputs>,
+) -> Option<Json<Abc>> {
     println!("fetching prover");
     let prover_storage = prover_storage.lock().await;
     let p = prover_storage.get(prover_name).unwrap();
     println!("fetching prover config");
     let prover_cfg = prover_cfg.lock().await;
     let cfg = prover_cfg.get(prover_name).unwrap();
+
+    let proof_inputs = inputs.into_inner();
     println!("generating circuit");
-    let circuit = prover::build_inputs(p.clone(), cfg.clone(), inputs.into_inner());
-    let (proof, inputs) = prover::prove(circuit, &p.params).unwrap();
+    let circuit = prover::build_inputs(p.clone(), cfg.clone(), proof_inputs);
+    let (proof, _) = prover::prove(circuit, &p.params).unwrap();
     // Check that the proof is valid
 
-    let pvk = prepare_verifying_key(&p.params.vk);
-    let verified = verify_proof(&pvk, &proof, &inputs).unwrap();
-    if verified {
-        return Status::Ok;
-    } else {
-        return Status::BadRequest;
-    }
+    return Some(Json(to_eth_type(Proof::from(proof))));
 }
 
 #[launch]
@@ -150,7 +148,9 @@ mod test {
     use rocket::http::Status;
     use rocket::local::blocking::Client;
     use std::collections::HashMap;
-
+    fn max_distance(x1: i64, y1: i64, x2: i64, y2: i64) -> u64 {
+        ((x1 - x2).pow(2) as f64 + (y1 - y2).pow(2) as f64).sqrt() as u64 + 1
+    }
     #[test]
     fn test_add_prover_route() {
         let rocket_instance = rocket();
