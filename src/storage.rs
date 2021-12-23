@@ -1,6 +1,5 @@
 use crate::errors::ProvingServerError;
-use crate::prover::CircuitProver;
-use crate::types::ProofInputs;
+use crate::types::{CircuitProver, ProofInputs};
 use rocket::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;

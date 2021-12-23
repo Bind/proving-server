@@ -1,35 +1,13 @@
 /// Helper for proving things about circuits
 use ark_bn254::Bn254;
-use ark_circom::{CircomBuilder, CircomCircuit, CircomConfig, CircomReduction};
-use ark_groth16::{create_random_proof_with_reduction, Proof, ProvingKey};
+use ark_circom::{CircomCircuit, CircomReduction};
+use ark_groth16::{create_random_proof_with_reduction, ProvingKey};
 use ark_std::rand::thread_rng;
 use num_bigint::ToBigInt;
-use std::{collections::HashMap, fs::File, path::PathBuf};
+use std::collections::HashMap;
 
 use crate::storage::ProverConfig;
-
-pub type ProofWithInputs = (Proof<Bn254>, Vec<ark_bn254::Fr>);
-
-pub struct CircuitProver {
-    pub builder: CircomBuilder<Bn254>,
-    pub params: ProvingKey<Bn254>,
-}
-
-impl CircuitProver {
-    pub fn new_path<P: Into<PathBuf>>(zkey: P, wasm: P, r1cs: P) -> Result<Self, ()> {
-        let cfg = CircomConfig::<Bn254>::new(wasm.into(), r1cs.into()).unwrap();
-        let builder = CircomBuilder::new(cfg);
-
-        let mut reader = File::open(zkey.into()).unwrap();
-        let (params, _) = ark_circom::read_zkey(&mut reader).unwrap();
-
-        Ok(CircuitProver::new(builder, params))
-    }
-
-    pub fn new(builder: CircomBuilder<Bn254>, params: ProvingKey<Bn254>) -> Self {
-        Self { builder, params }
-    }
-}
+use crate::types::{CircuitProver, ProofWithInputs};
 
 pub fn build_inputs(
     circuit: &CircuitProver,
