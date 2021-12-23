@@ -51,8 +51,8 @@ mod tests {
     #[test]
     fn test_circom_config_init() {
         CircomConfig::<Bn254>::new(
-            "./zkey_files/6.6.6/move.wasm",
-            "./zkey_files/6.6.6/move.r1cs",
+            "../../zkey_files/6.6.6/move.wasm",
+            "../../zkey_files/6.6.6/move.r1cs",
         )
         .unwrap();
     }
@@ -62,9 +62,9 @@ mod tests {
             ((x1 - x2).pow(2) as f64 + (y1 - y2).pow(2) as f64).sqrt() as u64 + 1
         }
         let circuit = CircuitProver::new_path(
-            String::from("./zkey_files/6.6.6/move.zkey"),
-            String::from("./zkey_files/6.6.6/move.wasm"),
-            String::from("./zkey_files/6.6.6/move.r1cs"),
+            String::from("../../zkey_files/6.6.6/move.zkey"),
+            String::from("../../zkey_files/6.6.6/move.wasm"),
+            String::from("../../zkey_files/6.6.6/move.r1cs"),
         )
         .unwrap();
 

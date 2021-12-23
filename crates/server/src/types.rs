@@ -30,6 +30,7 @@ pub struct CircuitProver {
 impl CircuitProver {
     pub fn new_path<P: Into<PathBuf>>(zkey: P, wasm: P, r1cs: P) -> Result<Self, ()> {
         let cfg = CircomConfig::<Bn254>::new(wasm.into(), r1cs.into()).unwrap();
+        println!("teeest");
         let builder = CircomBuilder::new(cfg);
 
         let mut reader = File::open(zkey.into()).unwrap();

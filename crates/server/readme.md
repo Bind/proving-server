@@ -4,7 +4,9 @@
 - [x] Dynamically fetch wasm, zkey, etc
 - [x] Store initialized prover across Rocket threads
 - [x] invoke prover based on request parameters from endpoint
-- [ ] Return serialized proof from endpoint
+- [x] Return serialized proof from endpoint
+- [ ] impl thiserror for json response body and stack trace
+- [ ] Silence Arkworks println output
 - [ ] ensure parallel proof generation is happy
 - [ ] move resource fetching into worker queue
 - [ ] throw error on duplicate create provers

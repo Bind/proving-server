@@ -1,4 +1,5 @@
 use rocket::http::Status;
+mod db;
 mod errors;
 mod prover;
 mod storage;
@@ -87,7 +88,7 @@ pub async fn add_prover_handler(
     fetch_file(wasm_path.clone(), prover.path_to_wasm.clone()).await;
     fetch_file(zkey_path.clone(), prover.path_to_zkey.clone()).await;
     fetch_file(r1cs_path.clone(), prover.path_to_r1cs.clone()).await;
-    let p = prover::CircuitProver::new_path(zkey_path, wasm_path, r1cs_path).unwrap();
+    let p = types::CircuitProver::new_path(zkey_path, wasm_path, r1cs_path).unwrap();
 
     let mut prover_storage = prover_storage.lock().await;
     prover_storage.insert(prover.name.clone(), p);
@@ -136,6 +137,7 @@ pub async fn execute_prover(
 fn rocket() -> _ {
     dotenv().ok();
     env::vars();
+    println!("{:?}", env::vars());
     rocket::build()
         .manage(storage::init_storage())
         .manage(storage::init_config())
