@@ -6,8 +6,7 @@ use ark_std::rand::thread_rng;
 use num_bigint::ToBigInt;
 use std::collections::HashMap;
 
-use crate::storage::ProverConfig;
-use crate::types::{CircuitProver, ProofWithInputs};
+use crate::types::{CircuitProver, ProofWithInputs, ProverConfig};
 
 pub fn build_inputs(
     circuit: &CircuitProver,

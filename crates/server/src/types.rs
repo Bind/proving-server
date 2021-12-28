@@ -1,10 +1,15 @@
+use crate::errors::ProvingServerError;
 use ark_bn254::Bn254;
 use ark_circom::ethereum::Proof;
 use ark_circom::{CircomBuilder, CircomConfig};
 use ark_groth16::{Proof as GrothProof, ProvingKey};
 use ethers::types::U256;
+use rocket::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::mpsc;
+use std::sync::Arc;
 use std::{fs::File, path::PathBuf};
+use tokio::sync::Mutex;
 
 pub type Abc = ([U256; 2], [[U256; 2]; 2], [U256; 2]);
 pub fn to_eth_type<P: Into<Proof>>(proof: P) -> Abc {
@@ -48,3 +53,40 @@ pub enum DatabaseMode {
     File { path_to_file: String },
     // Hosted { database_connection_string: String },
 }
+
+#[derive(Clone, Debug)]
+pub struct JobSender(pub mpsc::SyncSender<()>);
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct ProverConfig {
+    pub name: String,
+    pub version: String,
+    pub path_to_wasm: String,
+    pub path_to_zkey: String,
+    pub path_to_r1cs: String,
+    pub builder_params: Vec<String>,
+}
+
+impl ProverConfig {
+    pub fn validate_inputs(&self, inputs: &ProofInputs) -> Result<bool, ProvingServerError> {
+        for param in &self.builder_params {
+            if !inputs.contains_key(&param.clone()) {
+                return Err(ProvingServerError::BadProofInputsError {
+                    message: String::from(format!("{}", param.clone())),
+                });
+            }
+        }
+        return Ok(true);
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct EnvConfig {
+    pub zk_file_path: String,
+    pub db_config: DatabaseMode,
+}
+
+pub type Db = Arc<Mutex<HashMap<String, ProverConfig>>>;
+pub type Provers = Arc<Mutex<HashMap<String, CircuitProver>>>;
+
+pub type Config = Arc<Mutex<EnvConfig>>;

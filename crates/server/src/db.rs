@@ -1,5 +1,4 @@
-use crate::storage::Config;
-use crate::types::DatabaseMode;
+use crate::types::{Config, DatabaseMode};
 use rusqlite::{Connection, Result};
 
 #[derive(Debug)]
