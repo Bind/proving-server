@@ -6,9 +6,6 @@ mod storage;
 mod types;
 mod utils;
 mod worker;
-use crate::errors::ProvingServerError;
-use ark_circom::ethereum::Proof;
-use rocket::serde::json::Json;
 use std::sync::mpsc;
 use std::thread;
 

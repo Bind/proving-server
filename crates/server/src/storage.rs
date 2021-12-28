@@ -1,5 +1,5 @@
 use crate::types::DatabaseMode;
-use crate::types::{Config, Db, EnvConfig, ProverConfig, Provers};
+use crate::types::{Config, Db, EnvConfig, Provers};
 use std::collections::HashMap;
 use std::env;
 use std::sync::Arc;

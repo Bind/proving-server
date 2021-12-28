@@ -64,23 +64,20 @@ pub struct Table {
     id: String,
 }
 
-mod test {
-    use crate::storage;
-    use crate::utils;
-    use rusqlite::{params, Connection, Result};
+#[tokio::test]
+async fn test_table_init() -> Result<()> {
+    use crate::storage::init_async_config;
+    use crate::utils::load_environment_variables;
 
-    #[tokio::test]
-    async fn test_table_init() -> Result<()> {
-        utils::load_environment_variables();
-        let config = storage::init_async_config();
-        let conn = super::init_database(config).await.unwrap();
-
-        let mut statement =
-            conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='prover'")?;
-        let id_iter = statement.query_map([], |row| Ok(super::Table { id: row.get(0)? }))?;
-        for row in id_iter {
-            println!("{:?}", row.unwrap());
-        }
-        Ok(())
+    load_environment_variables();
+    let config = init_async_config();
+    let conn = init_database(config).await.unwrap();
+    let conn = init_tables(conn).unwrap();
+    let mut statement =
+        conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='prover'")?;
+    let id_iter = statement.query_map([], |row| Ok(Table { id: row.get(0)? }))?;
+    for row in id_iter {
+        println!("{:?}", row.unwrap());
     }
+    Ok(())
 }
