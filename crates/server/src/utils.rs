@@ -1,3 +1,5 @@
+use dotenv::from_filename;
+
 pub mod files {
     use std::fs::create_dir as createDir;
     use std::io::ErrorKind;
@@ -8,6 +10,8 @@ pub mod files {
             Err(why) => match why.kind() {
                 ErrorKind::AlreadyExists => {}
                 other_error => {
+                    println! {"Current dir {:?}", std::env::current_dir().unwrap()}
+                    println!("Looking for {:?}", archive_dir);
                     panic!("! {:?}", other_error)
                 }
             },
@@ -16,4 +20,12 @@ pub mod files {
             }
         }
     }
+}
+pub fn load_environment_variables() {
+    if cfg!(test) {
+        from_filename(".env.test").ok();
+    } else {
+        from_filename(".env").ok();
+    }
+    dotenv::dotenv().ok();
 }

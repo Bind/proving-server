@@ -135,12 +135,10 @@ pub async fn execute_prover(
 
 #[launch]
 fn rocket() -> _ {
-    dotenv().ok();
-    env::vars();
-    println!("{:?}", env::vars());
+    utils::load_environment_variables();
     rocket::build()
         .manage(storage::init_storage())
-        .manage(storage::init_config())
+        .manage(storage::init_async_config())
         .manage(storage::init_provers())
         .mount("/", routes![index])
         .mount(
