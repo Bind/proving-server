@@ -43,3 +43,9 @@ impl CircuitProver {
         Self { builder, params }
     }
 }
+#[derive(Clone, Debug)]
+pub enum DatabaseMode {
+    Memory,
+    File { path_to_file: String },
+    // Hosted { database_connection_string: String },
+}

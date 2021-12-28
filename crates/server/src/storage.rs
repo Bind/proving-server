@@ -1,5 +1,5 @@
 use crate::errors::ProvingServerError;
-use crate::types::{CircuitProver, ProofInputs};
+use crate::types::{CircuitProver, DatabaseMode, ProofInputs};
 use rocket::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;
@@ -30,9 +30,10 @@ impl ProverConfig {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug)]
 pub struct EnvConfig {
     pub zk_file_path: String,
+    pub db_config: DatabaseMode,
 }
 
 pub type Db = Arc<Mutex<HashMap<String, ProverConfig>>>;
@@ -45,10 +46,21 @@ pub fn init_storage() -> Db {
 pub fn init_provers() -> Provers {
     return Arc::new(Mutex::new(HashMap::new()));
 }
-pub fn init_config() -> Config {
+pub fn init_config() -> EnvConfig {
     let zk_file_path = env::var("ZK_FILE_PATH").unwrap();
+    let db_config = match env::var("DB_FILE_PATH") {
+        Ok(string) => DatabaseMode::File {
+            path_to_file: string,
+        },
+        Err(_) => DatabaseMode::Memory,
+    };
     let conf = EnvConfig {
         zk_file_path: zk_file_path,
+        db_config: db_config,
     };
+    return conf;
+}
+pub fn init_async_config() -> Config {
+    let conf = init_config();
     return Arc::new(Mutex::new(conf));
 }
