@@ -14,9 +14,6 @@ use storage::{EnvConfig, ProverConfig};
 use types::{to_eth_type, Abc, ProofInputs};
 extern crate dotenv;
 
-use dotenv::dotenv;
-use std::env;
-
 #[macro_use]
 extern crate rocket;
 
@@ -101,7 +98,6 @@ pub async fn list_provers_handler(
 ) -> Option<Json<Vec<storage::ProverConfig>>> {
     let prover_hm = db.lock().await;
     let provers: Vec<storage::ProverConfig> = prover_hm.values().cloned().collect();
-    println!("database {:?}", provers);
     return Some(Json(provers));
 }
 
@@ -183,7 +179,6 @@ mod test {
             ],
         };
         let response = client.post("/v1/prover").json(&prover).dispatch();
-        println!("{:?}", response.body());
         assert_eq!(response.status(), Status::Ok);
     }
     #[test]
@@ -211,7 +206,6 @@ mod test {
             ],
         };
         let response = client.post("/v1/prover").json(&prover).dispatch();
-        println!("{:?}", response.body());
         assert_eq!(response.status(), Status::Ok);
 
         let mut proof_request: HashMap<String, u64> = HashMap::new();
@@ -233,7 +227,6 @@ mod test {
         assert_eq!(response.status(), Status::Ok);
 
         let response = client.post("/v1/prover").json(&prover).dispatch();
-        println!("{:?}", response.body());
         assert_eq!(response.status(), Status::Ok);
     }
 
