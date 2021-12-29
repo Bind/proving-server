@@ -5,8 +5,8 @@ pub trait CRUD {
     fn get(id: u64, conn: Connection) -> Result<Self, rusqlite::Error>
     where
         Self: Sized;
-    // fn update(&self, conn: Connection) -> Result<usize, rusqlite::Error>;
-    // fn delete(&self, conn: Connection) -> Result<usize, rusqlite::Error>;
+    fn update(&self, conn: Connection) -> Result<usize, rusqlite::Error>;
+    fn delete(&self, conn: Connection) -> Result<usize, rusqlite::Error>;
 }
 
 #[derive(Debug)]
@@ -67,6 +67,12 @@ impl CRUD for ProverConfig {
         // Gross
         return Ok(prover_iter.next().unwrap().unwrap());
     }
+    fn update(&self, conn: Connection) -> Result<usize, rusqlite::Error> {
+        todo!()
+    }
+    fn delete(&self, conn: Connection) -> Result<usize, rusqlite::Error> {
+        todo!()
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -125,5 +131,11 @@ impl CRUD for Job {
             .collect();
         // also gross
         Ok(jobs.get(0).unwrap().clone())
+    }
+    fn update(&self, conn: Connection) -> Result<usize, rusqlite::Error> {
+        todo!()
+    }
+    fn delete(&self, conn: Connection) -> Result<usize, rusqlite::Error> {
+        todo!()
     }
 }
