@@ -1,5 +1,6 @@
 mod db;
 mod errors;
+mod models;
 mod prover;
 mod routes;
 mod storage;
