@@ -20,8 +20,9 @@ extern crate rocket;
 fn rocket() -> _ {
     utils::load_environment_variables();
     let (tx, rx) = mpsc::sync_channel(1);
-
-    thread::spawn(move || worker::worker(rx));
+    let config = storage::init_config();
+    let conn = db::init_database(config.clone()).unwrap();
+    thread::spawn(move || worker::worker(&conn, rx));
     rocket::build()
         .manage(types::JobSender(tx))
         .manage(storage::init_storage())
@@ -46,7 +47,7 @@ fn rocket() -> _ {
  */
 
 #[cfg(test)]
-mod tests {
+mod main_tests {
     use super::rocket;
     use super::types::reqres::ProverConfigRequest;
     use rocket::http::Status;
@@ -56,7 +57,7 @@ mod tests {
         ((x1 - x2).pow(2) as f64 + (y1 - y2).pow(2) as f64).sqrt() as u64 + 1
     }
     #[test]
-    fn test_add_prover_route() {
+    fn add_prover_route() {
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).expect("valid rocket instance");
 
@@ -84,7 +85,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
     }
     #[test]
-    fn test_proof_generation() {
+    fn proof_generation() {
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).expect("valid rocket instance");
         let prover = ProverConfigRequest {
@@ -134,7 +135,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_bad_proof_generation() {
+    fn bad_proof_generation() {
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).expect("valid rocket instance");
 
@@ -181,7 +182,7 @@ mod tests {
         assert_eq!(response.status(), Status::BadRequest);
     }
     #[test]
-    fn test_missing_proof_arg() {
+    fn missing_proof_arg() {
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).expect("valid rocket instance");
 

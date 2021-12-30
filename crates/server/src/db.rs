@@ -1,8 +1,16 @@
-use crate::types::{Config, DatabaseMode};
+use crate::types::{Config, DatabaseMode, EnvConfig};
 use rusqlite::{params, Connection, Result};
 
-pub async fn init_database(config: Config) -> Result<Connection> {
+pub async fn init_async_database(config: Config) -> Result<Connection> {
     let config = config.lock().await;
+    let conn = match &config.db_config {
+        DatabaseMode::Memory => Connection::open_in_memory()?,
+        DatabaseMode::File { path_to_file } => Connection::open(path_to_file.clone())?,
+    };
+
+    return Ok(conn);
+}
+pub fn init_database(config: EnvConfig) -> Result<Connection> {
     let conn = match &config.db_config {
         DatabaseMode::Memory => Connection::open_in_memory()?,
         DatabaseMode::File { path_to_file } => Connection::open(path_to_file.clone())?,
@@ -57,7 +65,7 @@ pub struct Table {
 }
 
 #[tokio::test]
-async fn test_table_init() -> Result<()> {
+async fn table_init() -> Result<()> {
     let conn = crate::test::fixtures::setup_db().await;
     let mut statement =
         conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='prover'")?;
@@ -69,7 +77,7 @@ async fn test_table_init() -> Result<()> {
 }
 
 #[tokio::test]
-async fn test_insert_into_prover() -> Result<()> {
+async fn insert_into_prover() -> Result<()> {
     use crate::models::ProverConfig;
     use crate::test::fixtures;
     use rusqlite::params;

@@ -1,6 +1,7 @@
+use rusqlite::Connection;
 use std::sync::mpsc;
 
-pub fn worker(trigger: mpsc::Receiver<()>) {
+pub fn worker(conn: &Connection, trigger: mpsc::Receiver<()>) {
     loop {
         trigger.recv().unwrap();
         println!("Hello!");
