@@ -4,13 +4,13 @@ pub mod fixtures {
     use rusqlite::Connection;
 
     pub async fn setup_db() -> Connection {
-        use crate::db::{init_async_database, init_tables};
-        use crate::storage::init_async_config;
+        use crate::db::{init_async_connection, init_tables};
+        use crate::utils::init_async_config;
         use crate::utils::load_environment_variables;
 
         load_environment_variables();
         let config = init_async_config();
-        let conn = init_async_database(config).await.unwrap();
+        let conn = init_async_connection(config).await.unwrap();
         let conn = init_tables(conn).unwrap();
         return conn;
     }

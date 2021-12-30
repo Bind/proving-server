@@ -1,3 +1,5 @@
+use crate::errors::ProvingServerError;
+use crate::types::proof::ProofInputs;
 use crate::types::reqres::ProverConfigRequest;
 use rusqlite::types::{FromSql, FromSqlError, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::{params, Connection, Result};
@@ -6,11 +8,11 @@ pub trait CRUD {
     fn get(id: i64, conn: &Connection) -> Result<Self, rusqlite::Error>
     where
         Self: Sized;
-    fn update(&self, conn: &Connection) -> Result<usize, rusqlite::Error>;
+    fn update(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error>;
     fn delete(&self, conn: &Connection) -> Result<usize, rusqlite::Error>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ProverConfig {
     pub id: Option<i64>,
     pub name: String,
@@ -32,6 +34,48 @@ impl From<ProverConfigRequest> for ProverConfig {
             path_to_r1cs: r.path_to_r1cs,
             builder_params: r.builder_params.clone(),
         }
+    }
+}
+impl ProverConfig {
+    pub fn validate_inputs(&self, inputs: &ProofInputs) -> Result<bool, ProvingServerError> {
+        for param in &self.builder_params {
+            if !inputs.contains_key(&param.clone()) {
+                return Err(ProvingServerError::BadProofInputsError {
+                    message: String::from(format!("{}", param.clone())),
+                });
+            }
+        }
+        return Ok(true);
+    }
+    pub fn get_by_name(name: String, conn: &Connection) -> Result<ProverConfig, rusqlite::Error> {
+        let mut stmt = conn.prepare(
+            "SELECT id, name, version, path_to_wasm, path_to_zkey,path_to_r1cs FROM Prover where name = ?1"
+        )?;
+
+        let mut query_map_stmt =
+            conn.prepare("SELECT name, prover FROM builder_params where prover = ?1")?;
+        let mut prover_iter = stmt.query_map(params![name], |row| {
+            let id = row.get(0)?;
+            let b_params: Vec<String> = query_map_stmt
+                .query_map(params![id], |param_row| {
+                    return Ok(param_row.get(0).unwrap());
+                })
+                .unwrap()
+                .map(|r| r.unwrap())
+                .collect();
+
+            Ok(ProverConfig {
+                id: id,
+                name: row.get(1)?,
+                version: row.get(2)?,
+                path_to_wasm: row.get(3)?,
+                path_to_zkey: row.get(4)?,
+                path_to_r1cs: row.get(5)?,
+                builder_params: b_params.clone(),
+            })
+        })?;
+        // Gross
+        return Ok(prover_iter.next().unwrap().unwrap());
     }
 }
 
@@ -64,7 +108,7 @@ impl CRUD for ProverConfig {
         let mut prover_iter = stmt.query_map(params![id], |row| {
             let b_params: Vec<String> = query_map_stmt
                 .query_map(params![id], |param_row| {
-                    return Ok(param_row.get(1).unwrap());
+                    return Ok(param_row.get(0).unwrap());
                 })
                 .unwrap()
                 .map(|r| r.unwrap())
@@ -83,7 +127,7 @@ impl CRUD for ProverConfig {
         // Gross
         return Ok(prover_iter.next().unwrap().unwrap());
     }
-    fn update(&self, conn: &Connection) -> Result<usize, rusqlite::Error> {
+    fn update(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error> {
         todo!()
     }
     fn delete(&self, conn: &Connection) -> Result<usize, rusqlite::Error> {
@@ -118,10 +162,10 @@ impl ToSql for JobStatus {
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct Job {
-    id: Option<i64>,
-    status: JobStatus,
-    message: String,
-    prover: i64,
+    pub id: Option<i64>,
+    pub status: JobStatus,
+    pub message: String,
+    pub prover: i64,
 }
 
 impl CRUD for Job {
@@ -151,8 +195,14 @@ impl CRUD for Job {
         // also gross
         Ok(jobs.get(0).unwrap().clone())
     }
-    fn update(&self, conn: &Connection) -> Result<usize, rusqlite::Error> {
-        todo!()
+    fn update(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error> {
+        let init = conn.execute(
+            "update job set status = ?2, message = ?3 where id = ?1",
+            params![self.id, self.status, self.message],
+        );
+        let prover_id = conn.last_insert_rowid().clone();
+        self.id = Some(prover_id.clone());
+        return init;
     }
     fn delete(&self, conn: &Connection) -> Result<usize, rusqlite::Error> {
         todo!()

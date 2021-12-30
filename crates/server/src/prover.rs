@@ -6,12 +6,12 @@ use ark_std::rand::thread_rng;
 use num_bigint::ToBigInt;
 use std::collections::HashMap;
 
+use crate::models::ProverConfig;
 use crate::types::proof::{CircuitProver, ProofWithInputs};
-use crate::types::reqres::ProverConfigRequest;
 
 pub fn build_inputs(
     circuit: &CircuitProver,
-    cfg: ProverConfigRequest,
+    cfg: ProverConfig,
     params: HashMap<String, u64>,
 ) -> CircomCircuit<Bn254> {
     let mut builder = circuit.builder.clone();

@@ -1,16 +1,55 @@
-use rusqlite::Connection;
+use crate::models::{Job, JobStatus, ProverConfig, CRUD};
+use crate::types::proof::{CircuitProver, Provers};
+use crate::types::{Db, EnvConfig};
+use crate::utils::files::{fetch_file, get_r1cs_path, get_wasm_path, get_zkey_path};
 use std::sync::mpsc;
 
-pub fn worker(conn: &Connection, trigger: mpsc::Receiver<()>) {
+pub async fn worker(
+    db: Db,
+    config: EnvConfig,
+    prover_storage: Provers,
+    trigger: mpsc::Receiver<i64>,
+) {
     loop {
-        trigger.recv().unwrap();
-        println!("Hello!");
+        let id = trigger.recv().unwrap();
+        println!("Hello! {:?}", id);
+
+        process_job(id, &db, config.clone(), &prover_storage).await;
     }
+}
+
+async fn process_job(id: i64, db: &Db, config: EnvConfig, prover_storage: &Provers) {
+    let db = db.lock().await;
+    let mut job = Job::get(id, &db).unwrap();
+    job.status = JobStatus::PROCESSING;
+    job.update(&db).unwrap();
+    let prover = ProverConfig::get(job.prover, &db).unwrap();
+
+    let wasm_path = get_wasm_path(&prover, config.clone());
+    let zkey_path = get_zkey_path(&prover, config.clone());
+    let r1cs_path = get_r1cs_path(&prover, config.clone());
+
+    println!(
+        "wasm:{:?} \nzkey:{:?} \nr1cs:{:?}",
+        wasm_path.clone(),
+        zkey_path.clone(),
+        r1cs_path.clone()
+    );
+
+    fetch_file(wasm_path.clone(), prover.path_to_wasm.clone()).await;
+    fetch_file(zkey_path.clone(), prover.path_to_zkey.clone()).await;
+    fetch_file(r1cs_path.clone(), prover.path_to_r1cs.clone()).await;
+
+    job.status = JobStatus::READY;
+    job.update(&db).unwrap();
+    let p = CircuitProver::new_path(zkey_path, wasm_path, r1cs_path).unwrap();
+    let mut prover_storage = prover_storage.lock().await;
+    prover_storage.insert(prover.name.clone(), p);
 }
 
 #[tokio::test]
 async fn read_job_from_db() {
-    use crate::storage::init_async_config;
+    use crate::utils::init_async_config;
     use crate::utils::load_environment_variables;
     load_environment_variables();
     let config = init_async_config();

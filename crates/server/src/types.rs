@@ -1,3 +1,4 @@
+use rusqlite::Connection;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -68,22 +69,9 @@ pub mod reqres {
         pub path_to_r1cs: String,
         pub builder_params: Vec<String>,
     }
-
-    impl ProverConfigRequest {
-        pub fn validate_inputs(&self, inputs: &ProofInputs) -> Result<bool, ProvingServerError> {
-            for param in &self.builder_params {
-                if !inputs.contains_key(&param.clone()) {
-                    return Err(ProvingServerError::BadProofInputsError {
-                        message: String::from(format!("{}", param.clone())),
-                    });
-                }
-            }
-            return Ok(true);
-        }
-    }
 }
 #[derive(Clone, Debug)]
-pub struct JobSender(pub mpsc::SyncSender<()>);
+pub struct JobSender(pub mpsc::SyncSender<i64>);
 
 #[derive(Clone, Debug)]
 pub struct EnvConfig {
@@ -91,7 +79,7 @@ pub struct EnvConfig {
     pub db_config: DatabaseMode,
 }
 
-pub type Db = Arc<Mutex<HashMap<String, reqres::ProverConfigRequest>>>;
+pub type Db = Arc<Mutex<Connection>>;
 
 pub type Config = Arc<Mutex<EnvConfig>>;
 #[derive(Clone, Debug)]

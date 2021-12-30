@@ -1,22 +1,26 @@
-use crate::types::{Config, DatabaseMode, EnvConfig};
-use rusqlite::{params, Connection, Result};
+use crate::types::{Config, DatabaseMode, Db, EnvConfig};
+use rusqlite::{Connection, Result};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
-pub async fn init_async_database(config: Config) -> Result<Connection> {
+#[cfg(test)]
+pub async fn init_async_connection(config: Config) -> Result<Connection> {
     let config = config.lock().await;
     let conn = match &config.db_config {
         DatabaseMode::Memory => Connection::open_in_memory()?,
         DatabaseMode::File { path_to_file } => Connection::open(path_to_file.clone())?,
     };
-
+    let conn = init_tables(conn).unwrap();
     return Ok(conn);
 }
-pub fn init_database(config: EnvConfig) -> Result<Connection> {
+
+pub fn init_async_database(config: EnvConfig) -> Result<Db> {
     let conn = match &config.db_config {
         DatabaseMode::Memory => Connection::open_in_memory()?,
         DatabaseMode::File { path_to_file } => Connection::open(path_to_file.clone())?,
     };
-
-    return Ok(conn);
+    let conn = init_tables(conn).unwrap();
+    Ok(Arc::new(Mutex::new(conn)))
 }
 
 pub fn init_tables(conn: Connection) -> Result<Connection> {

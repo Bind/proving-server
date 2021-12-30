@@ -1,7 +1,11 @@
+use crate::types::{Config, DatabaseMode, EnvConfig};
 use dotenv::from_filename;
-
+use std::collections::HashMap;
+use std::env;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 pub mod files {
-    use crate::types::reqres::ProverConfigRequest;
+    use crate::models::ProverConfig;
     use crate::types::EnvConfig;
     use rocket::http::Status;
     use std::fs::create_dir as createDir;
@@ -24,24 +28,24 @@ pub mod files {
             }
         }
     }
-    pub fn get_zkey_path(prover: ProverConfigRequest, config: EnvConfig) -> PathBuf {
+    pub fn get_zkey_path(prover: &ProverConfig, config: EnvConfig) -> PathBuf {
         let mut path = get_path_from_prover(prover, config).unwrap();
         path.set_extension("zkey");
         return path;
     }
-    pub fn get_wasm_path(prover: ProverConfigRequest, config: EnvConfig) -> PathBuf {
+    pub fn get_wasm_path(prover: &ProverConfig, config: EnvConfig) -> PathBuf {
         let mut path = get_path_from_prover(prover, config).unwrap();
         path.set_extension("wasm");
         return path;
     }
-    pub fn get_r1cs_path(prover: ProverConfigRequest, config: EnvConfig) -> PathBuf {
+    pub fn get_r1cs_path(prover: &ProverConfig, config: EnvConfig) -> PathBuf {
         let mut path = get_path_from_prover(prover, config).unwrap();
         path.set_extension("r1cs");
         return path;
     }
 
     pub fn get_path_from_prover(
-        prover: ProverConfigRequest,
+        prover: &ProverConfig,
         config: EnvConfig,
     ) -> Result<PathBuf, std::io::Error> {
         let mut path = PathBuf::from(config.zk_file_path.clone());
@@ -70,4 +74,26 @@ pub fn load_environment_variables() {
         from_filename(".env").ok();
     }
     dotenv::dotenv().ok();
+}
+
+pub fn init_provers() -> crate::types::proof::Provers {
+    return Arc::new(Mutex::new(HashMap::new()));
+}
+pub fn init_config() -> EnvConfig {
+    let zk_file_path = env::var("ZK_FILE_PATH").unwrap();
+    let db_config = match env::var("DB_FILE_PATH") {
+        Ok(string) => DatabaseMode::File {
+            path_to_file: string,
+        },
+        Err(_) => DatabaseMode::Memory,
+    };
+    let conf = EnvConfig {
+        zk_file_path: zk_file_path,
+        db_config: db_config,
+    };
+    return conf;
+}
+pub fn init_async_config() -> Config {
+    let conf = init_config();
+    return Arc::new(Mutex::new(conf));
 }

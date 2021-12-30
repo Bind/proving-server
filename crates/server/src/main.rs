@@ -9,7 +9,7 @@ mod types;
 mod utils;
 mod worker;
 use std::sync::mpsc;
-use std::thread;
+use tokio;
 
 extern crate dotenv;
 
@@ -20,14 +20,20 @@ extern crate rocket;
 fn rocket() -> _ {
     utils::load_environment_variables();
     let (tx, rx) = mpsc::sync_channel(1);
-    let config = storage::init_config();
-    let conn = db::init_database(config.clone()).unwrap();
-    thread::spawn(move || worker::worker(&conn, rx));
+    let config = utils::init_config();
+    let conn: types::Db = db::init_async_database(config.clone()).unwrap();
+    let provers = utils::init_provers();
+
+    // Create pointers for thread to reference
+    let t_conn = conn.clone();
+    let t_provers = provers.clone();
+    tokio::spawn(async move { worker::worker(t_conn, config, t_provers, rx).await });
+
     rocket::build()
         .manage(types::JobSender(tx))
-        .manage(storage::init_storage())
-        .manage(storage::init_async_config())
-        .manage(storage::init_provers())
+        .manage(conn)
+        .manage(utils::init_async_config())
+        .manage(provers)
         .mount("/", routes![routes::index])
         .mount(
             "/v1/",
