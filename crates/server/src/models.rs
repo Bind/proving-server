@@ -3,7 +3,7 @@ use rusqlite::types::{FromSql, FromSqlError, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::{params, Connection, Result};
 pub trait CRUD {
     fn create(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error>;
-    fn get(id: u64, conn: &Connection) -> Result<Self, rusqlite::Error>
+    fn get(id: i64, conn: &Connection) -> Result<Self, rusqlite::Error>
     where
         Self: Sized;
     fn update(&self, conn: &Connection) -> Result<usize, rusqlite::Error>;
@@ -54,7 +54,7 @@ impl CRUD for ProverConfig {
         }
         return initial;
     }
-    fn get(id: u64, conn: &Connection) -> Result<ProverConfig, rusqlite::Error> {
+    fn get(id: i64, conn: &Connection) -> Result<ProverConfig, rusqlite::Error> {
         let mut stmt = conn.prepare(
             "SELECT id, name, version, path_to_wasm, path_to_zkey,path_to_r1cs FROM Prover where id = ?1"
         )?;
@@ -91,7 +91,7 @@ impl CRUD for ProverConfig {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum JobStatus {
     PENDING = 0,
     QUEUED = 1,
@@ -116,7 +116,7 @@ impl ToSql for JobStatus {
         Ok(ToSqlOutput::from(*self as i64))
     }
 }
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Job {
     id: Option<i64>,
     status: JobStatus,
@@ -127,14 +127,14 @@ pub struct Job {
 impl CRUD for Job {
     fn create(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error> {
         let init = conn.execute(
-            "insert into job (status, message, prover) values (?1,?2,?3, ?4, ?5) ",
+            "insert into job (status, message, prover) values (?1,?2,?3) ",
             params![self.status, self.message, self.prover],
         );
         let prover_id = conn.last_insert_rowid().clone();
         self.id = Some(prover_id.clone());
         return init;
     }
-    fn get(id: u64, conn: &Connection) -> Result<Job, rusqlite::Error> {
+    fn get(id: i64, conn: &Connection) -> Result<Job, rusqlite::Error> {
         let mut stmt = conn.prepare("SELECT id, status, message, prover FROM job where id = ?1")?;
         let jobs: Vec<Job> = stmt
             .query_map(params![id], |row| {
@@ -172,5 +172,7 @@ async fn create_job() {
         message: String::from("test initiatization"),
         prover: prover.id.unwrap(),
     };
-    job.create(&conn);
+    job.create(&conn).unwrap();
+    let j2 = Job::get(job.id.unwrap(), &conn).unwrap();
+    assert_eq!(j2, job);
 }

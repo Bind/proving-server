@@ -78,7 +78,7 @@ async fn test_insert_into_prover() -> Result<()> {
     conn.execute(
         "insert into Prover (name, version, path_to_wasm, path_to_zkey, path_to_r1cs) values (?1,?2,?3, ?4, ?5) ",
         params![prover.name,prover.version, prover.path_to_wasm, prover.path_to_zkey, prover.path_to_r1cs],
-    );
+    ).unwrap();
     let mut stmt = conn
         .prepare("SELECT id, name, version, path_to_wasm, path_to_zkey,path_to_r1cs FROM Prover")?;
     let prover_iter = stmt.query_map([], |row| {
