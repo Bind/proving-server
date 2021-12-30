@@ -1,7 +1,8 @@
 use dotenv::from_filename;
 
 pub mod files {
-    use crate::types::{EnvConfig, ProverConfig};
+    use crate::types::reqres::ProverConfigRequest;
+    use crate::types::EnvConfig;
     use rocket::http::Status;
     use std::fs::create_dir as createDir;
     use std::fs::File;
@@ -23,24 +24,24 @@ pub mod files {
             }
         }
     }
-    pub fn get_zkey_path(prover: ProverConfig, config: EnvConfig) -> PathBuf {
+    pub fn get_zkey_path(prover: ProverConfigRequest, config: EnvConfig) -> PathBuf {
         let mut path = get_path_from_prover(prover, config).unwrap();
         path.set_extension("zkey");
         return path;
     }
-    pub fn get_wasm_path(prover: ProverConfig, config: EnvConfig) -> PathBuf {
+    pub fn get_wasm_path(prover: ProverConfigRequest, config: EnvConfig) -> PathBuf {
         let mut path = get_path_from_prover(prover, config).unwrap();
         path.set_extension("wasm");
         return path;
     }
-    pub fn get_r1cs_path(prover: ProverConfig, config: EnvConfig) -> PathBuf {
+    pub fn get_r1cs_path(prover: ProverConfigRequest, config: EnvConfig) -> PathBuf {
         let mut path = get_path_from_prover(prover, config).unwrap();
         path.set_extension("r1cs");
         return path;
     }
 
     pub fn get_path_from_prover(
-        prover: ProverConfig,
+        prover: ProverConfigRequest,
         config: EnvConfig,
     ) -> Result<PathBuf, std::io::Error> {
         let mut path = PathBuf::from(config.zk_file_path.clone());

@@ -1,8 +1,8 @@
 use crate::errors::ProvingServerError;
 use crate::prover;
-use crate::types::{
-    to_eth_type, Abc, CircuitProver, Config, Db, ProofInputs, ProverConfig, Provers,
-};
+use crate::types::proof::{to_eth_type, Abc, CircuitProver, ProofInputs, Provers};
+use crate::types::reqres::ProverConfigRequest;
+use crate::types::{Config, Db, JobSender};
 use crate::utils::files::{fetch_file, get_r1cs_path, get_wasm_path, get_zkey_path};
 use ark_circom::ethereum::Proof;
 use rocket::http::Status;
@@ -14,9 +14,11 @@ pub fn index() -> &'static str {
 }
 
 #[get("/prover")]
-pub async fn list_provers_handler(db: &rocket::State<Db>) -> Option<Json<Vec<ProverConfig>>> {
+pub async fn list_provers_handler(
+    db: &rocket::State<Db>,
+) -> Option<Json<Vec<ProverConfigRequest>>> {
     let prover_hm = db.lock().await;
-    let provers: Vec<ProverConfig> = prover_hm.values().cloned().collect();
+    let provers: Vec<ProverConfigRequest> = prover_hm.values().cloned().collect();
     return Some(Json(provers));
 }
 
@@ -43,7 +45,6 @@ pub async fn execute_prover(
     println!("generating circuit");
     let circuit = prover::build_inputs(p.clone(), cfg.clone(), proof_inputs);
     let (proof, _) = prover::prove(circuit, &p.params).unwrap();
-    // Check that the proof is valid
 
     return Ok(Json(to_eth_type(Proof::from(proof))));
 }
@@ -53,7 +54,7 @@ pub async fn add_prover_handler(
     db: &rocket::State<Db>,
     prover_storage: &rocket::State<Provers>,
     config: &rocket::State<Config>,
-    prover: Json<ProverConfig>,
+    prover: Json<ProverConfigRequest>,
 ) -> Status {
     let mut db = db.lock().await;
     let config = config.lock().await;
@@ -78,4 +79,10 @@ pub async fn add_prover_handler(
     let mut prover_storage = prover_storage.lock().await;
     prover_storage.insert(prover.name.clone(), p);
     return Status::Ok;
+}
+
+#[post("/pong")]
+pub async fn ping(trigger: &rocket::State<JobSender>) -> Status {
+    trigger.0.try_send(()).unwrap();
+    Status::Ok
 }

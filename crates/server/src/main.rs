@@ -4,6 +4,7 @@ mod models;
 mod prover;
 mod routes;
 mod storage;
+mod test;
 mod types;
 mod utils;
 mod worker;
@@ -45,9 +46,9 @@ fn rocket() -> _ {
  */
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::rocket;
-    use super::types::ProverConfig;
+    use super::types::reqres::ProverConfigRequest;
     use rocket::http::Status;
     use rocket::local::blocking::Client;
     use std::collections::HashMap;
@@ -59,7 +60,7 @@ mod test {
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).expect("valid rocket instance");
 
-        let prover = ProverConfig {
+        let prover = ProverConfigRequest {
             name: String::from("test"),
             version: String::from("0.0.1"),
             path_to_r1cs: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.r1cs"),
@@ -86,7 +87,7 @@ mod test {
     fn test_proof_generation() {
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).expect("valid rocket instance");
-        let prover = ProverConfig {
+        let prover = ProverConfigRequest {
             name: String::from("test"),
             version: String::from("0.0.1"),
             path_to_r1cs: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.r1cs"),
@@ -137,7 +138,7 @@ mod test {
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).expect("valid rocket instance");
 
-        let prover = ProverConfig {
+        let prover = ProverConfigRequest {
             name: String::from("test"),
             version: String::from("0.0.1"),
             path_to_r1cs: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.r1cs"),
@@ -184,7 +185,7 @@ mod test {
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).expect("valid rocket instance");
 
-        let prover = ProverConfig {
+        let prover = ProverConfigRequest {
             name: String::from("test"),
             version: String::from("0.0.1"),
             path_to_r1cs: String::from("https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.r1cs"),

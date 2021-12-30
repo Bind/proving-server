@@ -1,17 +1,18 @@
+use crate::types::reqres::ProverConfigRequest;
 use rusqlite::types::{FromSql, FromSqlError, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::{params, Connection, Result};
 pub trait CRUD {
-    fn create(&self, conn: Connection) -> Result<usize, rusqlite::Error>;
-    fn get(id: u64, conn: Connection) -> Result<Self, rusqlite::Error>
+    fn create(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error>;
+    fn get(id: u64, conn: &Connection) -> Result<Self, rusqlite::Error>
     where
         Self: Sized;
-    fn update(&self, conn: Connection) -> Result<usize, rusqlite::Error>;
-    fn delete(&self, conn: Connection) -> Result<usize, rusqlite::Error>;
+    fn update(&self, conn: &Connection) -> Result<usize, rusqlite::Error>;
+    fn delete(&self, conn: &Connection) -> Result<usize, rusqlite::Error>;
 }
 
 #[derive(Debug)]
 pub struct ProverConfig {
-    id: Option<String>,
+    pub id: Option<i64>,
     pub name: String,
     pub version: String,
     pub path_to_wasm: String,
@@ -20,13 +21,28 @@ pub struct ProverConfig {
     pub builder_params: Vec<String>,
 }
 
+impl From<ProverConfigRequest> for ProverConfig {
+    fn from(r: ProverConfigRequest) -> ProverConfig {
+        ProverConfig {
+            id: None,
+            name: r.name,
+            version: r.version,
+            path_to_wasm: r.path_to_wasm,
+            path_to_zkey: r.path_to_zkey,
+            path_to_r1cs: r.path_to_r1cs,
+            builder_params: r.builder_params.clone(),
+        }
+    }
+}
+
 impl CRUD for ProverConfig {
-    fn create(&self, conn: Connection) -> Result<usize, rusqlite::Error> {
+    fn create(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error> {
         let initial =  conn.execute(
             "insert into Prover (name, version, path_to_wasm, path_to_zkey, path_to_r1cs) values (?1,?2,?3, ?4, ?5) ",
             params![self.name,self.version, self.path_to_wasm, self.path_to_zkey, self.path_to_r1cs],
         );
         let prover_id = conn.last_insert_rowid().clone();
+        self.id = Some(prover_id.clone());
         for param in &self.builder_params {
             match conn.execute(
                 "insert into builder_params (name, prover) values (?1, ?2)",
@@ -38,7 +54,7 @@ impl CRUD for ProverConfig {
         }
         return initial;
     }
-    fn get(id: u64, conn: Connection) -> Result<ProverConfig, rusqlite::Error> {
+    fn get(id: u64, conn: &Connection) -> Result<ProverConfig, rusqlite::Error> {
         let mut stmt = conn.prepare(
             "SELECT id, name, version, path_to_wasm, path_to_zkey,path_to_r1cs FROM Prover where id = ?1"
         )?;
@@ -67,10 +83,10 @@ impl CRUD for ProverConfig {
         // Gross
         return Ok(prover_iter.next().unwrap().unwrap());
     }
-    fn update(&self, conn: Connection) -> Result<usize, rusqlite::Error> {
+    fn update(&self, conn: &Connection) -> Result<usize, rusqlite::Error> {
         todo!()
     }
-    fn delete(&self, conn: Connection) -> Result<usize, rusqlite::Error> {
+    fn delete(&self, conn: &Connection) -> Result<usize, rusqlite::Error> {
         todo!()
     }
 }
@@ -102,20 +118,23 @@ impl ToSql for JobStatus {
 }
 #[derive(Clone)]
 pub struct Job {
-    id: u64,
+    id: Option<i64>,
     status: JobStatus,
     message: String,
-    prover: u64,
+    prover: i64,
 }
 
 impl CRUD for Job {
-    fn create(&self, conn: Connection) -> Result<usize, rusqlite::Error> {
-        conn.execute(
+    fn create(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error> {
+        let init = conn.execute(
             "insert into job (status, message, prover) values (?1,?2,?3, ?4, ?5) ",
             params![self.status, self.message, self.prover],
-        )
+        );
+        let prover_id = conn.last_insert_rowid().clone();
+        self.id = Some(prover_id.clone());
+        return init;
     }
-    fn get(id: u64, conn: Connection) -> Result<Job, rusqlite::Error> {
+    fn get(id: u64, conn: &Connection) -> Result<Job, rusqlite::Error> {
         let mut stmt = conn.prepare("SELECT id, status, message, prover FROM job where id = ?1")?;
         let jobs: Vec<Job> = stmt
             .query_map(params![id], |row| {
@@ -132,10 +151,26 @@ impl CRUD for Job {
         // also gross
         Ok(jobs.get(0).unwrap().clone())
     }
-    fn update(&self, conn: Connection) -> Result<usize, rusqlite::Error> {
+    fn update(&self, conn: &Connection) -> Result<usize, rusqlite::Error> {
         todo!()
     }
-    fn delete(&self, conn: Connection) -> Result<usize, rusqlite::Error> {
+    fn delete(&self, conn: &Connection) -> Result<usize, rusqlite::Error> {
         todo!()
     }
+}
+
+#[tokio::test]
+async fn create_job() {
+    use crate::test::fixtures;
+    let conn = fixtures::setup_db().await;
+    let mut prover = fixtures::df_prover_config();
+    ProverConfig::create(&mut prover, &conn).unwrap();
+
+    let mut job = Job {
+        id: None,
+        status: JobStatus::PENDING,
+        message: String::from("test initiatization"),
+        prover: prover.id.unwrap(),
+    };
+    job.create(&conn);
 }
