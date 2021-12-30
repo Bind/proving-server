@@ -5,7 +5,7 @@
 - [x] Store initialized prover across Rocket threads
 - [x] invoke prover based on request parameters from endpoint
 - [x] Return serialized proof from endpoint
-- [ ] move resource fetching into worker queue
+- [x] move resource fetching into worker queue
 - [ ] expose current job status as part of an endpoint
 - [ ] impl thiserror for json response body and stack trace
 - [ ] Silence Arkworks println output (Big ooof tried and failed somewhere in wasmer)
