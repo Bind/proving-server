@@ -2,7 +2,7 @@ use crate::errors::ProvingServerError;
 use crate::models::{Job, JobStatus, ProverConfig, CRUD};
 use crate::prover;
 use crate::types::proof::{to_eth_type, Abc, ProofInputs, Provers};
-use crate::types::reqres::ProverConfigRequest;
+use crate::types::reqres::{JobResponse, ProofRequest, ProverConfigRequest};
 use crate::types::{Config, Db, JobSender};
 use ark_circom::ethereum::Proof;
 use rocket::http::Status;
@@ -20,19 +20,39 @@ pub async fn list_provers_handler(
     todo!();
 }
 
-#[post("/prove/<prover_name>", data = "<inputs>")]
+#[get("/prover/<prover_name>/<prover_version>")]
+pub async fn get_prover(
+    db: &rocket::State<Db>,
+    prover_name: &str,
+    prover_version: &str,
+) -> Result<Json<JobResponse>, ProvingServerError> {
+    let db = db.lock().await;
+
+    let job =
+        Job::get_by_name_and_version(String::from(prover_name), String::from(prover_version), &db)
+            .unwrap();
+    return Ok(Json(JobResponse::from(job)));
+}
+
+#[post("/prove/<prover_name>/<prover_version>", data = "<inputs>")]
 pub async fn execute_prover(
     prover_storage: &rocket::State<Provers>,
     db: &rocket::State<Db>,
     prover_name: &str,
-    inputs: Json<ProofInputs>,
+    prover_version: &str,
+    inputs: Json<ProofRequest>,
 ) -> Result<Json<Abc>, ProvingServerError> {
     println!("fetching prover");
     let prover_storage = prover_storage.lock().await;
     let p = prover_storage.get(prover_name).unwrap();
     let db = db.lock().await;
     println!("fetching prover config");
-    let prover = ProverConfig::get_by_name(String::from(prover_name), &db).unwrap();
+    let prover = ProverConfig::get_by_name_and_version(
+        String::from(prover_name),
+        String::from(prover_version),
+        &db,
+    )
+    .unwrap();
 
     let proof_inputs = inputs.into_inner();
     match prover.validate_inputs(&proof_inputs) {

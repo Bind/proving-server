@@ -55,6 +55,8 @@ pub mod proof {
 }
 
 pub mod reqres {
+    use std::collections::HashMap;
+
     use super::proof::ProofInputs;
     use crate::errors::ProvingServerError;
     use rocket::serde::{Deserialize, Serialize};
@@ -68,6 +70,23 @@ pub mod reqres {
         pub path_to_zkey: String,
         pub path_to_r1cs: String,
         pub builder_params: Vec<String>,
+    }
+    pub type ProofRequest = HashMap<String, u64>;
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    #[serde(crate = "rocket::serde")]
+    pub struct JobResponse {
+        pub status: crate::models::JobStatus,
+        pub message: String,
+        pub prover: i64,
+    }
+    impl From<crate::models::Job> for JobResponse {
+        fn from(job: crate::models::Job) -> JobResponse {
+            JobResponse {
+                status: job.status,
+                message: job.message,
+                prover: job.prover,
+            }
+        }
     }
 }
 #[derive(Clone, Debug)]

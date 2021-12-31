@@ -1,6 +1,7 @@
 use crate::errors::ProvingServerError;
 use crate::types::proof::ProofInputs;
 use crate::types::reqres::ProverConfigRequest;
+use rocket::serde::{Deserialize, Serialize};
 use rusqlite::types::{FromSql, FromSqlError, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::{params, Connection, Result};
 pub trait CRUD {
@@ -12,7 +13,7 @@ pub trait CRUD {
     fn delete(&self, conn: &Connection) -> Result<usize, rusqlite::Error>;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProverConfig {
     pub id: Option<i64>,
     pub name: String,
@@ -47,25 +48,33 @@ impl ProverConfig {
         }
         return Ok(true);
     }
-    pub fn get_by_name(name: String, conn: &Connection) -> Result<ProverConfig, rusqlite::Error> {
-        let mut stmt = conn.prepare(
-            "SELECT id, name, version, path_to_wasm, path_to_zkey,path_to_r1cs FROM Prover where name = ?1"
-        )?;
-
+    pub fn get_builder_params(id: i64, conn: &Connection) -> Result<Vec<String>, rusqlite::Error> {
         let mut query_map_stmt =
             conn.prepare("SELECT name, prover FROM builder_params where prover = ?1")?;
-        let mut prover_iter = stmt.query_map(params![name], |row| {
-            let id = row.get(0)?;
-            let b_params: Vec<String> = query_map_stmt
-                .query_map(params![id], |param_row| {
-                    return Ok(param_row.get(0).unwrap());
-                })
-                .unwrap()
-                .map(|r| r.unwrap())
-                .collect();
+        let res: Vec<String> = query_map_stmt
+            .query_map(params![id], |row| {
+                return Ok(row.get(0).unwrap());
+            })
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect();
+        return Ok(res);
+    }
 
+    pub fn get_by_name_and_version(
+        name: String,
+        version: String,
+        conn: &Connection,
+    ) -> Result<ProverConfig, rusqlite::Error> {
+        let mut stmt = conn.prepare(
+            "SELECT id, name, version, path_to_wasm, path_to_zkey,path_to_r1cs FROM Prover where name = ?1 and version =?2"
+        )?;
+
+        let mut prover_iter = stmt.query_map(params![name, version], |row| {
+            let id: i64 = row.get(0).unwrap();
+            let b_params = ProverConfig::get_builder_params(id, conn).unwrap();
             Ok(ProverConfig {
-                id: id,
+                id: Some(id),
                 name: row.get(1)?,
                 version: row.get(2)?,
                 path_to_wasm: row.get(3)?,
@@ -103,16 +112,8 @@ impl CRUD for ProverConfig {
             "SELECT id, name, version, path_to_wasm, path_to_zkey,path_to_r1cs FROM Prover where id = ?1"
         )?;
 
-        let mut query_map_stmt =
-            conn.prepare("SELECT name, prover FROM builder_params where prover = ?1")?;
         let mut prover_iter = stmt.query_map(params![id], |row| {
-            let b_params: Vec<String> = query_map_stmt
-                .query_map(params![id], |param_row| {
-                    return Ok(param_row.get(0).unwrap());
-                })
-                .unwrap()
-                .map(|r| r.unwrap())
-                .collect();
+            let b_params: Vec<String> = ProverConfig::get_builder_params(id, conn).unwrap();
 
             Ok(ProverConfig {
                 id: row.get(0)?,
@@ -135,7 +136,7 @@ impl CRUD for ProverConfig {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
 pub enum JobStatus {
     PENDING = 0,
     QUEUED = 1,
@@ -160,12 +161,35 @@ impl ToSql for JobStatus {
         Ok(ToSqlOutput::from(*self as i64))
     }
 }
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct Job {
     pub id: Option<i64>,
     pub status: JobStatus,
     pub message: String,
     pub prover: i64,
+}
+
+impl Job {
+    pub fn get_by_name_and_version(
+        prover_name: String,
+        prover_version: String,
+        conn: &Connection,
+    ) -> Result<Job, rusqlite::Error> {
+        let mut stmt = conn.prepare("SELECT job.id, job.status, job.message, job.prover FROM job join prover on prover.id = job.prover where prover.name = ?1 and prover.version = ?2")?;
+        let jobs: Vec<Job> = stmt
+            .query_map(params![prover_name, prover_version], |row| {
+                return Ok(Job {
+                    id: row.get(0)?,
+                    status: row.get(1)?,
+                    message: row.get(2)?,
+                    prover: row.get(3)?,
+                });
+            })
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect();
+        Ok(jobs.get(0).unwrap().clone())
+    }
 }
 
 impl CRUD for Job {
