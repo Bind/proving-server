@@ -31,6 +31,7 @@ pub mod proof {
 
     pub type ProofWithInputs = (GrothProof<Bn254>, Vec<ark_bn254::Fr>);
 
+    #[derive(Clone)]
     pub struct CircuitProver {
         pub builder: CircomBuilder<Bn254>,
         pub params: ProvingKey<Bn254>,

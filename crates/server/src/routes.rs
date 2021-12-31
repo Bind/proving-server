@@ -43,16 +43,20 @@ pub async fn execute_prover(
     inputs: Json<ProofRequest>,
 ) -> Result<Json<Abc>, ProvingServerError> {
     println!("fetching prover");
-    let prover_storage = prover_storage.lock().await;
-    let p = prover_storage.get(prover_name).unwrap();
-    let db = db.lock().await;
+    let prover_storage_guard = prover_storage.lock().await;
+    let p: crate::types::proof::CircuitProver =
+        prover_storage_guard.get(prover_name).unwrap().clone();
+    drop(prover_storage_guard);
+
+    let db_guard = db.lock().await;
     println!("fetching prover config");
     let prover = ProverConfig::get_by_name_and_version(
         String::from(prover_name),
         String::from(prover_version),
-        &db,
+        &db_guard,
     )
     .unwrap();
+    drop(db_guard);
 
     let proof_inputs = inputs.into_inner();
     match prover.validate_inputs(&proof_inputs) {
@@ -61,7 +65,7 @@ pub async fn execute_prover(
     }
 
     println!("generating circuit");
-    let circuit = prover::build_inputs(p.clone(), prover.clone(), proof_inputs);
+    let circuit = prover::build_inputs(&p.clone(), prover.clone(), proof_inputs);
     let (proof, _) = prover::prove(circuit, &p.params).unwrap();
 
     return Ok(Json(to_eth_type(Proof::from(proof))));
