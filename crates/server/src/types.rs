@@ -58,8 +58,6 @@ pub mod proof {
 pub mod reqres {
     use std::collections::HashMap;
 
-    
-    
     use rocket::serde::{Deserialize, Serialize};
 
     #[derive(Clone, Debug, Default, Deserialize, Serialize)]

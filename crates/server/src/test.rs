@@ -7,7 +7,7 @@ pub mod fixtures {
         ((x1 - x2).pow(2) as f64 + (y1 - y2).pow(2) as f64).sqrt() as u64 + 1
     }
     pub async fn setup_db() -> Connection {
-        use crate::db::{init_async_connection};
+        use crate::db::init_async_connection;
         use crate::utils::init_async_config;
         use crate::utils::load_environment_variables;
 
