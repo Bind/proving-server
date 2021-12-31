@@ -1,5 +1,5 @@
 use rusqlite::Connection;
-use std::collections::HashMap;
+
 use std::sync::mpsc;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -58,8 +58,8 @@ pub mod proof {
 pub mod reqres {
     use std::collections::HashMap;
 
-    use super::proof::ProofInputs;
-    use crate::errors::ProvingServerError;
+    
+    
     use rocket::serde::{Deserialize, Serialize};
 
     #[derive(Clone, Debug, Default, Deserialize, Serialize)]

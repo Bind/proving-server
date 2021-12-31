@@ -128,10 +128,10 @@ impl CRUD for ProverConfig {
         // Gross
         return Ok(prover_iter.next().unwrap().unwrap());
     }
-    fn update(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error> {
+    fn update(&mut self, _conn: &Connection) -> Result<usize, rusqlite::Error> {
         todo!()
     }
-    fn delete(&self, conn: &Connection) -> Result<usize, rusqlite::Error> {
+    fn delete(&self, _conn: &Connection) -> Result<usize, rusqlite::Error> {
         todo!()
     }
 }
@@ -228,7 +228,7 @@ impl CRUD for Job {
         self.id = Some(prover_id.clone());
         return init;
     }
-    fn delete(&self, conn: &Connection) -> Result<usize, rusqlite::Error> {
+    fn delete(&self, _conn: &Connection) -> Result<usize, rusqlite::Error> {
         todo!()
     }
 }

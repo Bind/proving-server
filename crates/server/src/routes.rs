@@ -1,9 +1,9 @@
 use crate::errors::ProvingServerError;
 use crate::models::{Job, JobStatus, ProverConfig, CRUD};
 use crate::prover;
-use crate::types::proof::{to_eth_type, Abc, ProofInputs, Provers};
+use crate::types::proof::{to_eth_type, Abc, Provers};
 use crate::types::reqres::{JobResponse, ProofRequest, ProverConfigRequest};
-use crate::types::{Config, Db, JobSender};
+use crate::types::Db;
 use ark_circom::ethereum::Proof;
 use rocket::http::Status;
 use rocket::serde::json::Json;
@@ -15,7 +15,7 @@ pub fn index() -> &'static str {
 
 #[get("/prover")]
 pub async fn list_provers_handler(
-    db: &rocket::State<Db>,
+    _db: &rocket::State<Db>,
 ) -> Option<Json<Vec<ProverConfigRequest>>> {
     todo!();
 }
@@ -80,7 +80,7 @@ pub async fn add_prover_handler(
     let db = db.lock().await;
     let prover = prover.into_inner();
     let mut p = ProverConfig::from(prover);
-    p.create(&db);
+    p.create(&db).unwrap();
     let j = &mut Job {
         id: None,
         status: JobStatus::PENDING,
@@ -89,6 +89,6 @@ pub async fn add_prover_handler(
     };
     Job::create(j, &db).unwrap();
 
-    queue.0.try_send(j.id.unwrap());
+    queue.0.try_send(j.id.unwrap()).unwrap();
     return Status::Ok;
 }

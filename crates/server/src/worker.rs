@@ -3,7 +3,7 @@ use crate::types::proof::{CircuitProver, Provers};
 use crate::types::{Db, EnvConfig};
 use crate::utils::files::{fetch_file, get_r1cs_path, get_wasm_path, get_zkey_path};
 use std::sync::mpsc;
-use std::{thread, time};
+
 
 pub async fn worker(
     db: Db,
@@ -59,5 +59,5 @@ async fn read_job_from_db() {
     use crate::utils::init_async_config;
     use crate::utils::load_environment_variables;
     load_environment_variables();
-    let config = init_async_config();
+    let _config = init_async_config();
 }

@@ -1,4 +1,4 @@
-use crate::types::{Config, DatabaseMode, Db, EnvConfig};
+use crate::types::{DatabaseMode, Db, EnvConfig};
 use rusqlite::{Connection, Result};
 use std::sync::Arc;
 use tokio::sync::Mutex;
