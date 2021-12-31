@@ -3,17 +3,6 @@ use rusqlite::{Connection, Result};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-#[cfg(test)]
-pub async fn init_async_connection(config: Config) -> Result<Connection> {
-    let config = config.lock().await;
-    let conn = match &config.db_config {
-        DatabaseMode::Memory => Connection::open_in_memory()?,
-        DatabaseMode::File { path_to_file } => Connection::open(path_to_file.clone())?,
-    };
-    let conn = init_tables(conn).unwrap();
-    return Ok(conn);
-}
-
 pub fn init_async_database(config: EnvConfig) -> Result<Db> {
     let conn = match &config.db_config {
         DatabaseMode::Memory => Connection::open_in_memory()?,
@@ -62,12 +51,24 @@ pub fn init_tables(conn: Connection) -> Result<Connection> {
     )?;
     Ok(conn)
 }
-
+#[cfg(test)]
+use crate::types::Config;
+#[cfg(test)]
 #[derive(Debug)]
 pub struct Table {
     id: String,
 }
 
+#[cfg(test)]
+pub async fn init_async_connection(config: Config) -> Result<Connection> {
+    let config = config.lock().await;
+    let conn = match &config.db_config {
+        DatabaseMode::Memory => Connection::open_in_memory()?,
+        DatabaseMode::File { path_to_file } => Connection::open(path_to_file.clone())?,
+    };
+    let conn = init_tables(conn).unwrap();
+    return Ok(conn);
+}
 #[tokio::test]
 async fn table_init() -> Result<()> {
     let conn = crate::test::fixtures::setup_db().await;

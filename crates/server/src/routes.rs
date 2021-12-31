@@ -1,5 +1,5 @@
 use crate::errors::ProvingServerError;
-use crate::models::{Job, JobStatus, ProverConfig, CRUD};
+use crate::models::{Crud, Job, JobStatus, ProverConfig};
 use crate::prover;
 use crate::types::proof::{to_eth_type, Abc, Provers};
 use crate::types::reqres::{JobResponse, ProofRequest, ProverConfigRequest};
@@ -31,7 +31,7 @@ pub async fn get_prover(
     let job =
         Job::get_by_name_and_version(String::from(prover_name), String::from(prover_version), &db)
             .unwrap();
-    return Ok(Json(JobResponse::from(job)));
+    Ok(Json(JobResponse::from(job)))
 }
 
 #[post("/prove/<prover_name>/<prover_version>", data = "<inputs>")]
@@ -59,16 +59,15 @@ pub async fn execute_prover(
     drop(db_guard);
 
     let proof_inputs = inputs.into_inner();
-    match prover.validate_inputs(&proof_inputs) {
-        Err(error) => return Err(error),
-        _ => (),
+    if let Err(error) = prover.validate_inputs(&proof_inputs) {
+        return Err(error);
     }
 
     println!("generating circuit");
-    let circuit = prover::build_inputs(&p.clone(), prover.clone(), proof_inputs);
+    let circuit = prover::build_inputs(&p.clone(), prover, proof_inputs);
     let (proof, _) = prover::prove(circuit, &p.params).unwrap();
 
-    return Ok(Json(to_eth_type(Proof::from(proof))));
+    Ok(Json(to_eth_type(Proof::from(proof))))
 }
 
 #[post("/prover", format = "json", data = "<prover>")]
@@ -83,12 +82,12 @@ pub async fn add_prover_handler(
     p.create(&db).unwrap();
     let j = &mut Job {
         id: None,
-        status: JobStatus::PENDING,
+        status: JobStatus::Pending,
         prover: p.id.unwrap(),
         message: String::from("asdf"),
     };
     Job::create(j, &db).unwrap();
 
     queue.0.try_send(j.id.unwrap()).unwrap();
-    return Status::Ok;
+    Status::Ok
 }

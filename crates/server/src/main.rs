@@ -9,7 +9,6 @@ mod types;
 mod utils;
 mod worker;
 use std::sync::mpsc;
-use tokio;
 
 extern crate dotenv;
 
@@ -69,15 +68,15 @@ mod main_tests {
         prover_version: String,
         status: JobStatus,
     ) {
-        let mut curr_status = JobStatus::PENDING;
+        let mut curr_status = JobStatus::Pending;
 
         while status != curr_status {
             let response = client
                 .get(format!("/v1/prover/{}/{}", prover_name, prover_version))
                 .dispatch();
-            let jobStatus: JobResponse =
+            let job_status: JobResponse =
                 rocket::serde::json::from_str(&response.into_string().unwrap()).unwrap();
-            curr_status = jobStatus.status;
+            curr_status = job_status.status;
         }
         return;
     }
@@ -87,7 +86,7 @@ mod main_tests {
         prover_version: String,
         status: JobStatus,
     ) {
-        let mut curr_status = JobStatus::PENDING;
+        let mut curr_status = JobStatus::Pending;
         let five = time::Duration::from_secs(5);
         while status != curr_status {
             thread::sleep(five);
@@ -95,9 +94,9 @@ mod main_tests {
                 .get(format!("/v1/prover/{}/{}", prover_name, prover_version))
                 .dispatch()
                 .await;
-            let jobStatus: JobResponse =
+            let job_status: JobResponse =
                 rocket::serde::json::from_str(&response.into_string().await.unwrap()).unwrap();
-            curr_status = jobStatus.status;
+            curr_status = job_status.status;
         }
         return;
     }
@@ -121,7 +120,7 @@ mod main_tests {
             &client,
             prover.name.clone(),
             prover.version.clone(),
-            JobStatus::READY,
+            JobStatus::Ready,
         )
         .await;
         let proof_request = fixtures::df_proof_request();
@@ -154,7 +153,7 @@ mod main_tests {
             &client,
             prover.name.clone(),
             prover.version.clone(),
-            JobStatus::READY,
+            JobStatus::Ready,
         );
         let response = client
             .post(format!(
@@ -178,7 +177,7 @@ mod main_tests {
             &client,
             prover.name.clone(),
             prover.version.clone(),
-            JobStatus::READY,
+            JobStatus::Ready,
         )
         .await;
         let mut proof_request = fixtures::df_proof_request();

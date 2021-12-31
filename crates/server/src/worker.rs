@@ -1,9 +1,8 @@
-use crate::models::{Job, JobStatus, ProverConfig, CRUD};
+use crate::models::{Crud, Job, JobStatus, ProverConfig};
 use crate::types::proof::{CircuitProver, Provers};
 use crate::types::{Db, EnvConfig};
 use crate::utils::files::{fetch_file, get_r1cs_path, get_wasm_path, get_zkey_path};
 use std::sync::mpsc;
-
 
 pub async fn worker(
     db: Db,
@@ -23,7 +22,7 @@ async fn process_job(id: i64, db: &Db, config: EnvConfig, prover_storage: &Prove
     let guard = db.lock().await;
     let mut job = Job::get(id, &guard).unwrap();
 
-    job.status = JobStatus::PROCESSING;
+    job.status = JobStatus::Processing;
     job.update(&guard).unwrap();
     drop(guard);
     let guard = db.lock().await;
@@ -49,7 +48,7 @@ async fn process_job(id: i64, db: &Db, config: EnvConfig, prover_storage: &Prove
     prover_storage.insert(prover.name.clone(), p);
 
     let guard = db.lock().await;
-    job.status = JobStatus::READY;
+    job.status = JobStatus::Ready;
     job.update(&guard).unwrap();
     drop(guard);
 }

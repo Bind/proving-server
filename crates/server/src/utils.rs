@@ -12,8 +12,8 @@ pub mod files {
     use std::fs::File;
     use std::io::copy;
     use std::io::ErrorKind;
-    use std::path::PathBuf;
-    pub fn create_dir(archive_dir: &PathBuf) {
+    use std::path::{Path, PathBuf};
+    pub fn create_dir(archive_dir: &Path) {
         match createDir(&archive_dir) {
             Err(why) => match why.kind() {
                 ErrorKind::AlreadyExists => {}
@@ -31,24 +31,24 @@ pub mod files {
     pub fn get_zkey_path(prover: &ProverConfig, config: EnvConfig) -> PathBuf {
         let mut path = get_path_from_prover(prover, config).unwrap();
         path.set_extension("zkey");
-        return path;
+        path
     }
     pub fn get_wasm_path(prover: &ProverConfig, config: EnvConfig) -> PathBuf {
         let mut path = get_path_from_prover(prover, config).unwrap();
         path.set_extension("wasm");
-        return path;
+        path
     }
     pub fn get_r1cs_path(prover: &ProverConfig, config: EnvConfig) -> PathBuf {
         let mut path = get_path_from_prover(prover, config).unwrap();
         path.set_extension("r1cs");
-        return path;
+        path
     }
 
     pub fn get_path_from_prover(
         prover: &ProverConfig,
         config: EnvConfig,
     ) -> Result<PathBuf, std::io::Error> {
-        let mut path = PathBuf::from(config.zk_file_path.clone());
+        let mut path = PathBuf::from(config.zk_file_path);
         path = path.join(prover.version.clone());
         create_dir(&path);
         path = path.join(prover.name.clone());
@@ -64,7 +64,7 @@ pub mod files {
         let content = resp.bytes().await.unwrap();
 
         copy(&mut content.as_ref(), &mut dest).unwrap();
-        return Status::Accepted;
+        Status::Accepted
     }
 }
 pub fn load_environment_variables() {
@@ -77,7 +77,7 @@ pub fn load_environment_variables() {
 }
 
 pub fn init_provers() -> crate::types::proof::Provers {
-    return Arc::new(Mutex::new(HashMap::new()));
+    Arc::new(Mutex::new(HashMap::new()))
 }
 pub fn init_config() -> EnvConfig {
     let zk_file_path = env::var("ZK_FILE_PATH").unwrap();
@@ -87,13 +87,13 @@ pub fn init_config() -> EnvConfig {
         },
         Err(_) => DatabaseMode::Memory,
     };
-    let conf = EnvConfig {
-        zk_file_path: zk_file_path,
-        db_config: db_config,
-    };
-    return conf;
+
+    EnvConfig {
+        zk_file_path,
+        db_config,
+    }
 }
 pub fn init_async_config() -> Config {
     let conf = init_config();
-    return Arc::new(Mutex::new(conf));
+    Arc::new(Mutex::new(conf))
 }

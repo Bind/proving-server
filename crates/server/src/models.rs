@@ -4,7 +4,7 @@ use crate::types::reqres::ProverConfigRequest;
 use rocket::serde::{Deserialize, Serialize};
 use rusqlite::types::{FromSql, FromSqlError, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::{params, Connection, Result};
-pub trait CRUD {
+pub trait Crud {
     fn create(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error>;
     fn get(id: i64, conn: &Connection) -> Result<Self, rusqlite::Error>
     where
@@ -33,7 +33,7 @@ impl From<ProverConfigRequest> for ProverConfig {
             path_to_wasm: r.path_to_wasm,
             path_to_zkey: r.path_to_zkey,
             path_to_r1cs: r.path_to_r1cs,
-            builder_params: r.builder_params.clone(),
+            builder_params: r.builder_params,
         }
     }
 }
@@ -42,23 +42,21 @@ impl ProverConfig {
         for param in &self.builder_params {
             if !inputs.contains_key(&param.clone()) {
                 return Err(ProvingServerError::BadProofInputsError {
-                    message: String::from(format!("{}", param.clone())),
+                    message: param.clone(),
                 });
             }
         }
-        return Ok(true);
+        Ok(true)
     }
     pub fn get_builder_params(id: i64, conn: &Connection) -> Result<Vec<String>, rusqlite::Error> {
         let mut query_map_stmt =
             conn.prepare("SELECT name, prover FROM builder_params where prover = ?1")?;
         let res: Vec<String> = query_map_stmt
-            .query_map(params![id], |row| {
-                return Ok(row.get(0).unwrap());
-            })
+            .query_map(params![id], |row| Ok(row.get(0).unwrap()))
             .unwrap()
             .map(|r| r.unwrap())
             .collect();
-        return Ok(res);
+        Ok(res)
     }
 
     pub fn get_by_name_and_version(
@@ -80,22 +78,22 @@ impl ProverConfig {
                 path_to_wasm: row.get(3)?,
                 path_to_zkey: row.get(4)?,
                 path_to_r1cs: row.get(5)?,
-                builder_params: b_params.clone(),
+                builder_params: b_params,
             })
         })?;
         // Gross
-        return Ok(prover_iter.next().unwrap().unwrap());
+        Ok(prover_iter.next().unwrap().unwrap())
     }
 }
 
-impl CRUD for ProverConfig {
+impl Crud for ProverConfig {
     fn create(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error> {
         let initial =  conn.execute(
             "insert into Prover (name, version, path_to_wasm, path_to_zkey, path_to_r1cs) values (?1,?2,?3, ?4, ?5) ",
             params![self.name,self.version, self.path_to_wasm, self.path_to_zkey, self.path_to_r1cs],
         );
-        let prover_id = conn.last_insert_rowid().clone();
-        self.id = Some(prover_id.clone());
+        let prover_id = conn.last_insert_rowid();
+        self.id = Some(prover_id);
         for param in &self.builder_params {
             match conn.execute(
                 "insert into builder_params (name, prover) values (?1, ?2)",
@@ -105,7 +103,7 @@ impl CRUD for ProverConfig {
                 Err(e) => return Err(e),
             }
         }
-        return initial;
+        initial
     }
     fn get(id: i64, conn: &Connection) -> Result<ProverConfig, rusqlite::Error> {
         let mut stmt = conn.prepare(
@@ -122,11 +120,11 @@ impl CRUD for ProverConfig {
                 path_to_wasm: row.get(3)?,
                 path_to_zkey: row.get(4)?,
                 path_to_r1cs: row.get(5)?,
-                builder_params: b_params.clone(),
+                builder_params: b_params,
             })
         })?;
         // Gross
-        return Ok(prover_iter.next().unwrap().unwrap());
+        Ok(prover_iter.next().unwrap().unwrap())
     }
     fn update(&mut self, _conn: &Connection) -> Result<usize, rusqlite::Error> {
         todo!()
@@ -138,21 +136,21 @@ impl CRUD for ProverConfig {
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
 pub enum JobStatus {
-    PENDING = 0,
-    QUEUED = 1,
-    PROCESSING = 2,
-    READY = 3,
+    Pending = 0,
+    Queued = 1,
+    Processing = 2,
+    Ready = 3,
 }
 
 impl FromSql for JobStatus {
     fn column_result(value: ValueRef<'_>) -> Result<Self, FromSqlError> {
         let inter = value.as_i64().unwrap();
         match inter {
-            x if x == JobStatus::PENDING as i64 => Ok(JobStatus::PENDING),
-            x if x == JobStatus::QUEUED as i64 => Ok(JobStatus::QUEUED),
-            x if x == JobStatus::PROCESSING as i64 => Ok(JobStatus::PROCESSING),
-            x if x == JobStatus::READY as i64 => Ok(JobStatus::READY),
-            _ => return Err(FromSqlError::OutOfRange(inter)),
+            x if x == JobStatus::Pending as i64 => Ok(JobStatus::Pending),
+            x if x == JobStatus::Queued as i64 => Ok(JobStatus::Queued),
+            x if x == JobStatus::Processing as i64 => Ok(JobStatus::Processing),
+            x if x == JobStatus::Ready as i64 => Ok(JobStatus::Ready),
+            _ => Err(FromSqlError::OutOfRange(inter)),
         }
     }
 }
@@ -178,12 +176,12 @@ impl Job {
         let mut stmt = conn.prepare("SELECT job.id, job.status, job.message, job.prover FROM job join prover on prover.id = job.prover where prover.name = ?1 and prover.version = ?2")?;
         let jobs: Vec<Job> = stmt
             .query_map(params![prover_name, prover_version], |row| {
-                return Ok(Job {
+                Ok(Job {
                     id: row.get(0)?,
                     status: row.get(1)?,
                     message: row.get(2)?,
                     prover: row.get(3)?,
-                });
+                })
             })
             .unwrap()
             .map(|r| r.unwrap())
@@ -192,26 +190,26 @@ impl Job {
     }
 }
 
-impl CRUD for Job {
+impl Crud for Job {
     fn create(&mut self, conn: &Connection) -> Result<usize, rusqlite::Error> {
         let init = conn.execute(
             "insert into job (status, message, prover) values (?1,?2,?3) ",
             params![self.status, self.message, self.prover],
         );
-        let prover_id = conn.last_insert_rowid().clone();
-        self.id = Some(prover_id.clone());
-        return init;
+        let prover_id = conn.last_insert_rowid();
+        self.id = Some(prover_id);
+        init
     }
     fn get(id: i64, conn: &Connection) -> Result<Job, rusqlite::Error> {
         let mut stmt = conn.prepare("SELECT id, status, message, prover FROM job where id = ?1")?;
         let jobs: Vec<Job> = stmt
             .query_map(params![id], |row| {
-                return Ok(Job {
+                Ok(Job {
                     id: row.get(0)?,
                     status: row.get(1)?,
                     message: row.get(2)?,
                     prover: row.get(3)?,
-                });
+                })
             })
             .unwrap()
             .map(|r| r.unwrap())
@@ -224,9 +222,9 @@ impl CRUD for Job {
             "update job set status = ?2, message = ?3 where id = ?1",
             params![self.id, self.status, self.message],
         );
-        let prover_id = conn.last_insert_rowid().clone();
-        self.id = Some(prover_id.clone());
-        return init;
+        let prover_id = conn.last_insert_rowid();
+        self.id = Some(prover_id);
+        init
     }
     fn delete(&self, _conn: &Connection) -> Result<usize, rusqlite::Error> {
         todo!()
@@ -242,7 +240,7 @@ async fn create_job() {
 
     let mut job = Job {
         id: None,
-        status: JobStatus::PENDING,
+        status: JobStatus::Pending,
         message: String::from("test initiatization"),
         prover: prover.id.unwrap(),
     };
