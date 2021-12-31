@@ -6,10 +6,10 @@
 - [x] invoke prover based on request parameters from endpoint
 - [x] Return serialized proof from endpoint
 - [x] move resource fetching into worker queue
-- [ ] expose current job status as part of an endpoint
+- [x] expose current job status as part of an endpoint
+- [x] ensure parallel proof generation is happy
 - [ ] impl thiserror for json response body and stack trace
 - [ ] Silence Arkworks println output (Big ooof tried and failed somewhere in wasmer)
-- [ ] ensure parallel proof generation is happy
 - [ ] throw error on duplicate create provers
 
 ```
