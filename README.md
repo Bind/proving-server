@@ -1,7 +1,7 @@
 # proving-server (Beta)
 ![Github Actions](https://github.com/bind/proving-server/workflows/Tests/badge.svg)
 
-ZK-Snark proving server built using Ark-Circom
+zkSNARK proving server built using Ark-Circom
 
 **This project aims to be the go-to solution for quickly spinning up compute resources for generating snark proofs for zk applications.**
 
