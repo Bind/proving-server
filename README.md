@@ -1,6 +1,6 @@
 # proving-server
-## Beta Software
 ![Github Actions](https://github.com/bind/proving-server/workflows/Tests/badge.svg)
+
 ZK-Snark proving server built using Ark-Circom
 
 **This project aims to be the go-to solution for quickly spinning up compute resources for generating snark proofs for zk applications.**
@@ -18,6 +18,7 @@ The service exposes three endpoints:
 
 
 
-
-
-
+How you can help (Things I haven't gotten to yet):
+- [ ] Build out a dockerfile
+- [ ] Guide to hosting on Google Cloud Run
+- [ ] Update the remote snarking df plugin
