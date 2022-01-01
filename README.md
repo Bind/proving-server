@@ -17,25 +17,25 @@ The service exposes three endpoints:
 curl --request POST \
   --url http://localhost:8000/v1/prover \
   --header 'Content-Type: application/json' \
-  --data '{ \
-	"name":"move", \
-	"version":"3", \
-	"path_to_wasm": "https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.wasm", \
-	"path_to_r1cs": "https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.r1cs", \
-	"path_to_zkey": "https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.zkey", \
-	"builder_params": [ \
-          "x1", \
-          "y1", \
-          "x2", \
-          "y2", \
-          "r", \
-          "distMax", \
-          "PLANETHASH_KEY", \
-          "SPACETYPE_KEY",  \
-          "SCALE",  \
-          "xMirror", \
-          "yMirror" \
-         ] \
+  --data '{
+	"name":"move",
+	"version":"3",
+	"path_to_wasm": "https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.wasm",
+	"path_to_r1cs": "https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.r1cs",
+	"path_to_zkey": "https://unpkg.com/@darkforest_eth/snarks@6.6.6/move.zkey",
+	"builder_params": [
+          "x1",
+          "y1",
+          "x2",
+          "y2",
+          "r",
+          "distMax",
+          "PLANETHASH_KEY",
+          "SPACETYPE_KEY",
+          "SCALE",
+          "xMirror",
+          "yMirror"
+         ]
 }'
 ```
 
@@ -50,18 +50,18 @@ curl --request GET \
 curl --request POST \
   --url http://localhost:8000/v1/prove/<prover_name>/<version> \
   --header 'Content-Type: application/json' \
-  --data '{ \
-    "x1":100, \
-    "y1":100, \
-    "x2":120, \
-    "y2":120, \
-    "r":8000, \
-    "distMax":29, \
-    "PLANETHASH_KEY":1729, \
-    "SPACETYPE_KEY":1730, \
-    "SCALE":16384, \
-    "xMirror":0, \
-    "yMirror":0 \
+  --data '{
+    "x1":100,
+    "y1":100,
+    "x2":120,
+    "y2":120,
+    "r":8000,
+    "distMax":29,
+    "PLANETHASH_KEY":1729,
+    "SPACETYPE_KEY":1730,
+    "SCALE":16384,
+    "xMirror":0,
+    "yMirror":0
   }'
 ```
 
