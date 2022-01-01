@@ -1,4 +1,4 @@
-# proving-server
+# proving-server (Beta)
 ![Github Actions](https://github.com/bind/proving-server/workflows/Tests/badge.svg)
 
 ZK-Snark proving server built using Ark-Circom
