@@ -3,7 +3,6 @@ mod errors;
 mod models;
 mod prover;
 mod routes;
-mod storage;
 mod test;
 mod types;
 mod utils;
@@ -96,12 +95,13 @@ mod main_tests {
                 .await;
             let job_status: JobResponse =
                 rocket::serde::json::from_str(&response.into_string().await.unwrap()).unwrap();
+            println!("{:?}", job_status);
             curr_status = job_status.status;
         }
         return;
     }
     #[rocket::async_test]
-    async fn add_prover_route() {
+    async fn int_add_prover_route() {
         let rocket_instance = rocket();
         let client = AsyncClient::tracked(rocket_instance).await.unwrap();
         let prover = crate::test::fixtures::df_prover_config_request();
@@ -109,7 +109,7 @@ mod main_tests {
         assert_eq!(response.status(), Status::Ok);
     }
     #[rocket::async_test]
-    async fn proof_generation() {
+    async fn int_proof_generation() {
         use rocket::local::asynchronous::Client;
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).await.unwrap();
@@ -141,7 +141,7 @@ mod main_tests {
 
     #[test]
     #[should_panic]
-    fn bad_proof_generation() {
+    fn int_bad_proof_generation() {
         let rocket_instance = rocket();
         let client = Client::tracked(rocket_instance).expect("valid rocket instance");
 
@@ -166,7 +166,7 @@ mod main_tests {
         assert_eq!(response.status(), Status::BadRequest);
     }
     #[rocket::async_test]
-    async fn missing_proof_arg() {
+    async fn int_missing_proof_arg() {
         let rocket_instance = rocket();
         let client = AsyncClient::tracked(rocket_instance).await.unwrap();
 

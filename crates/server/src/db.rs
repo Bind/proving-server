@@ -70,7 +70,7 @@ pub async fn init_async_connection(config: Config) -> Result<Connection> {
     return Ok(conn);
 }
 #[tokio::test]
-async fn table_init() -> Result<()> {
+async fn unit_table_init() -> Result<()> {
     let conn = crate::test::fixtures::setup_db().await;
     let mut statement =
         conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='prover'")?;
@@ -82,7 +82,7 @@ async fn table_init() -> Result<()> {
 }
 
 #[tokio::test]
-async fn insert_into_prover() -> Result<()> {
+async fn unit_insert_into_prover() -> Result<()> {
     use crate::models::ProverConfig;
     use crate::test::fixtures;
     use rusqlite::params;

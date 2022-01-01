@@ -8,7 +8,7 @@ pub mod files {
     use crate::models::ProverConfig;
     use crate::types::EnvConfig;
     use rocket::http::Status;
-    use std::fs::create_dir as createDir;
+    use std::fs::create_dir_all as createDir;
     use std::fs::File;
     use std::io::copy;
     use std::io::ErrorKind;

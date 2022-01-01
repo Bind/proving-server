@@ -3,3 +3,5 @@
 /build/
 /dist/
 zkey_files
+
+.DS_Store

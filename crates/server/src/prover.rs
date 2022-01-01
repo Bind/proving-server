@@ -49,22 +49,22 @@ mod tests {
     };
     use ark_std::rand::thread_rng;
     #[test]
-    fn circom_config_init() {
+    fn unit_circom_config_init() {
         CircomConfig::<Bn254>::new(
-            "../../zkey_files/6.6.6/move.wasm",
-            "../../zkey_files/6.6.6/move.r1cs",
+            "../../static/6.6.6/move.wasm",
+            "../../static/6.6.6/move.r1cs",
         )
         .unwrap();
     }
     #[test]
-    fn build_circuit() {
+    fn unit_build_circuit() {
         fn max_distance(x1: i64, y1: i64, x2: i64, y2: i64) -> u64 {
             ((x1 - x2).pow(2) as f64 + (y1 - y2).pow(2) as f64).sqrt() as u64 + 1
         }
         let circuit = CircuitProver::new_path(
-            String::from("../../zkey_files/6.6.6/move.zkey"),
-            String::from("../../zkey_files/6.6.6/move.wasm"),
-            String::from("../../zkey_files/6.6.6/move.r1cs"),
+            String::from("../../static/6.6.6/move.zkey"),
+            String::from("../../static/6.6.6/move.wasm"),
+            String::from("../../static/6.6.6/move.r1cs"),
         )
         .unwrap();
 

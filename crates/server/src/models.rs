@@ -232,7 +232,7 @@ impl Crud for Job {
 }
 
 #[tokio::test]
-async fn create_job() {
+async fn unit_create_job() {
     use crate::test::fixtures;
     let conn = fixtures::setup_db().await;
     let mut prover = fixtures::df_prover_config();
