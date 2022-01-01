@@ -81,3 +81,7 @@ Otherwise this app makes heavy use of the work done by contributors to https://g
 
 - [ ] Build out a dockerfile
 - [ ] Guide to hosting on Google Cloud Run
+
+### Inspiration
+
+This project was heavily inspired by the work done by the good folks at https://github.com/projectsophon & https://github.com/darkforest-eth/
