@@ -69,6 +69,15 @@ curl --request POST \
 ```
 
 
-Things I haven't gotten to yet:
+## How this works
+
+When hitting the `/prover/` endpoint, a job is scheduled to fetch the provided wasm, zkey, and r1cs files and then instantiate a circom circuit. After that job has completed you can than call the `prove/<name>/<version>` endpoint with the required input parameters and get the proof back.
+	
+We use a basic sqlite in memory database to facilitate job tracking right now, which has its trade-offs. If there is enough excitement or demand we can quickly integrate an external db like psql.
+
+Otherwise this app makes heavy use of the work done by contributors to https://github.com/gakonst/ark-circom and would quite literally not work without them!
+
+### Things I haven't gotten to yet
+
 - [ ] Build out a dockerfile
 - [ ] Guide to hosting on Google Cloud Run
