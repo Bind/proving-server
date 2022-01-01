@@ -84,7 +84,7 @@ pub async fn add_prover_handler(
         id: None,
         status: JobStatus::Pending,
         prover: p.id.unwrap(),
-        message: String::from(format!("fetching deps for {}", p.name.clone())),
+        message: format!("fetching deps for {}", p.name.clone()),
     };
     Job::create(j, &db).unwrap();
 
