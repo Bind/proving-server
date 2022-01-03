@@ -31,5 +31,5 @@ RUN set -ex; \
   sqlite3
 COPY --from=builder /app/target/release/proving-server /usr/local/bin
 ENV ZK_FILE_PATH="/app/zk_files/"
-ENTRYPOINT ["/usr/local/bin/proving-server"]
+CMD ROCKET_PORT=$PORT /usr/local/bin/proving-server
 
