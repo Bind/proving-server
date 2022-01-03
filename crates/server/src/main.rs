@@ -9,7 +9,6 @@ mod utils;
 mod worker;
 use std::sync::mpsc;
 extern crate dotenv;
-extern crate rocket_cors;
 #[macro_use]
 extern crate rocket;
 
