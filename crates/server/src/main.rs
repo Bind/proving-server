@@ -11,7 +11,6 @@ use std::sync::mpsc;
 extern crate dotenv;
 #[macro_use]
 extern crate rocket;
-
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Header;
 use rocket::{Request, Response};
@@ -50,13 +49,14 @@ fn rocket() -> rocket::Rocket<rocket::Build> {
     let config = utils::init_config();
     let conn: types::Db = db::init_async_database(config.clone()).unwrap();
     let provers = utils::init_provers();
+    let figment = rocket::Config::figment().merge(("port", &config.port.clone()));
 
     // Create pointers for thread to reference
     let t_conn = conn.clone();
     let t_provers = provers.clone();
     tokio::spawn(async move { worker::worker(t_conn, config, t_provers, rx).await });
 
-    rocket::build()
+    rocket::custom(figment)
         .manage(types::JobSender(tx))
         .manage(conn)
         .manage(utils::init_async_config())

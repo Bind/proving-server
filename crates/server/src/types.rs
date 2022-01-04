@@ -95,6 +95,7 @@ pub struct JobSender(pub mpsc::SyncSender<i64>);
 pub struct EnvConfig {
     pub zk_file_path: String,
     pub db_config: DatabaseMode,
+    pub port: i32,
 }
 
 pub type Db = Arc<Mutex<Connection>>;

@@ -87,10 +87,15 @@ pub fn init_config() -> EnvConfig {
         },
         Err(_) => DatabaseMode::Memory,
     };
+    let port = match env::var("PORT") {
+        Ok(num) => num.parse::<i32>().unwrap(),
+        Err(_) => 8000,
+    };
 
     EnvConfig {
         zk_file_path,
         db_config,
+        port,
     }
 }
 pub fn init_async_config() -> Config {
