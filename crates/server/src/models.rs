@@ -186,7 +186,10 @@ impl Job {
             .unwrap()
             .map(|r| r.unwrap())
             .collect();
-        Ok(jobs.get(0).unwrap().clone())
+        match jobs.get(0) {
+            None => Err(rusqlite::Error::InvalidQuery),
+            Some(f) => Ok(f.clone()),
+        }
     }
 }
 
@@ -244,6 +247,7 @@ async fn unit_create_job() {
         message: String::from("test initiatization"),
         prover: prover.id.unwrap(),
     };
+    job.create(&conn).unwrap();
     job.create(&conn).unwrap();
     let j2 = Job::get(job.id.unwrap(), &conn).unwrap();
     assert_eq!(j2, job);

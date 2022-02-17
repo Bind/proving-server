@@ -78,16 +78,25 @@ pub async fn add_prover_handler(
 ) -> Status {
     let db = db.lock().await;
     let prover = prover.into_inner();
-    let mut p = ProverConfig::from(prover);
+    let mut p = ProverConfig::from(prover.clone());
     p.create(&db).unwrap();
-    let j = &mut Job {
-        id: None,
-        status: JobStatus::Pending,
-        prover: p.id.unwrap(),
-        message: format!("fetching deps for {}", p.name.clone()),
-    };
-    Job::create(j, &db).unwrap();
 
-    queue.0.try_send(j.id.unwrap()).unwrap();
+    match Job::get_by_name_and_version(prover.name.clone(), prover.version.clone(), &db) {
+        Err(why) => {
+            //Doesn't exist
+            println!("{}", why);
+            let j = &mut Job {
+                id: None,
+                status: JobStatus::Pending,
+                prover: p.id.unwrap(),
+                message: format!("fetching deps for {}", p.name.clone()),
+            };
+            Job::create(j, &db).unwrap();
+            let id = j.id.unwrap();
+            queue.0.try_send(id).unwrap();
+        }
+        Ok(_) => {}
+    }
+
     Status::Ok
 }

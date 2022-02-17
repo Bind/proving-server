@@ -12,8 +12,7 @@ pub async fn worker(
 ) {
     loop {
         let id = trigger.recv().unwrap();
-        println!("Hello! {:?}", id);
-
+        println!("starting job for {:?}", id);
         process_job(id, &db, config.clone(), &prover_storage).await;
     }
 }
@@ -21,19 +20,22 @@ pub async fn worker(
 async fn process_job(id: i64, db: &Db, config: EnvConfig, prover_storage: &Provers) {
     let guard = db.lock().await;
     let mut job = Job::get(id, &guard).unwrap();
-
     job.status = JobStatus::Processing;
     job.update(&guard).unwrap();
+    println!("job_id: {:?} current status {:?} ", id, job.status);
     drop(guard);
     let guard = db.lock().await;
     let prover = ProverConfig::get(job.prover, &guard).unwrap();
     drop(guard);
     let wasm_path = get_wasm_path(&prover, config.clone());
+    println!("job_id: {:?} fetching wasm file", id);
     let zkey_path = get_zkey_path(&prover, config.clone());
+    println!("job_id: {:?} fetching zkey file", id);
     let r1cs_path = get_r1cs_path(&prover, config.clone());
+    println!("job_id: {:?} fetching r1cs file", id);
 
     println!(
-        "wasm:{:?} \nzkey:{:?} \nr1cs:{:?}",
+        " fetched\nwasm:{:?} \nzkey:{:?} \nr1cs:{:?}",
         wasm_path.clone(),
         zkey_path.clone(),
         r1cs_path.clone()
