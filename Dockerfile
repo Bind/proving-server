@@ -10,6 +10,8 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN set -ex; \ 
   apt-get update; \
   apt-get install -y --no-install-recommends \
+     tini \
+    nfs-common \
   pkg-config \
   libssl-dev \
   sqlite3 libsqlite3-dev
@@ -30,7 +32,15 @@ RUN set -ex; \
   pkg-config \
   sqlite3
 COPY --from=builder /app/target/release/proving-server /usr/local/bin
-ENV ZK_FILE_PATH="/app/zk_files/"
+
+ENV ZK_FILE_PATH /mnt/nfs/filestore
+
 ENV ROCKET_ADDRESS=0.0.0.0
-CMD /usr/local/bin/proving-server
+
+# Ensure the script is executable
+RUN chmod +x /app/run.sh
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+CMD ['/app/run.sh']
 
