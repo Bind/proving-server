@@ -22,29 +22,33 @@ async fn process_job(id: i64, db: &Db, config: EnvConfig, prover_storage: &Prove
     let mut job = Job::get(id, &guard).unwrap();
     job.status = JobStatus::Processing;
     job.update(&guard).unwrap();
-    println!("job_id: {:?} current status {:?} ", id, job.status);
     drop(guard);
     let guard = db.lock().await;
     let prover = ProverConfig::get(job.prover, &guard).unwrap();
     drop(guard);
     let wasm_path = get_wasm_path(&prover, config.clone());
-    println!("job_id: {:?} fetching wasm file", id);
     let zkey_path = get_zkey_path(&prover, config.clone());
-    println!("job_id: {:?} fetching zkey file", id);
     let r1cs_path = get_r1cs_path(&prover, config.clone());
-    println!("job_id: {:?} fetching r1cs file", id);
 
     println!(
-        " fetched\nwasm:{:?} \nzkey:{:?} \nr1cs:{:?}",
-        wasm_path.clone(),
-        zkey_path.clone(),
+        "writing {:?} file to {:?}",
+        prover.path_to_wasm.clone(),
+        wasm_path.clone()
+    );
+    fetch_file(wasm_path.clone(), prover.path_to_wasm.clone()).await;
+    println!(
+        "writing {:?} file to {:?}",
+        prover.path_to_zkey.clone(),
+        zkey_path.clone()
+    );
+    fetch_file(zkey_path.clone(), prover.path_to_zkey.clone()).await;
+    println!(
+        "writing {:?} file to {:?}",
+        prover.path_to_r1cs.clone(),
         r1cs_path.clone()
     );
-
-    fetch_file(wasm_path.clone(), prover.path_to_wasm.clone()).await;
-    fetch_file(zkey_path.clone(), prover.path_to_zkey.clone()).await;
     fetch_file(r1cs_path.clone(), prover.path_to_r1cs.clone()).await;
-
+    println!("Initializing Prover");
     let p = CircuitProver::new_path(zkey_path, wasm_path, r1cs_path).unwrap();
     let mut prover_storage = prover_storage.lock().await;
     prover_storage.insert(prover.name.clone(), p);
