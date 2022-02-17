@@ -56,13 +56,14 @@ pub mod files {
     }
 
     pub async fn fetch_file(path: PathBuf, url: String) -> Status {
-        let resp = match reqwest::get(url).await {
+        let resp = match reqwest::get(url.clone()).await {
             Ok(res) => res,
             Err(_) => return Status::BadRequest,
         };
-        let mut dest = File::create(path).unwrap();
+        println!("{:?} {:?}", resp.status(), url.clone());
+        let mut dest = File::create(path.clone()).unwrap();
         let content = resp.bytes().await.unwrap();
-
+        println!("copying {:?} to {:?}", url, path.clone().as_os_str());
         copy(&mut content.as_ref(), &mut dest).unwrap();
         Status::Accepted
     }
